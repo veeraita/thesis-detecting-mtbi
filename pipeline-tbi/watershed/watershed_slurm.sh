@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=0-00:60:00
 #SBATCH --mem-per-cpu=8000    # 8000MB of memory
-#SBATCH --array=0-5
+#SBATCH --array=0-4
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
 if  [ -z "$SUBJECTS_DIR" ]
@@ -14,8 +14,8 @@ echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 temp=$SUBJECTS_DIR
 
 module load teflon
-module load mne
-source $MNE_ROOT/bin/mne_setup_sh
+module load anaconda3
+source activate mne
 
 module load freesurfer
 
@@ -35,7 +35,7 @@ do
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    srun mne_watershed_bem --subject "${sub}" --overwrite
+    srun python -c "import mne; mne.bem.make_watershed_bem(\"${sub}\", subjects_dir=\"${SUBJECTS_DIR}\")"
   fi
 done
 
