@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=0-09:00:00
+#SBATCH --time=0-12:00:00
 #SBATCH --mem-per-cpu=8000    # 8000MB of memory
 #SBATCH --array=0-47
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
@@ -16,6 +16,7 @@ then
   exit 1
 fi
 
+echo "MRI_DIR set as $MRI_DIR"
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 temp=$SUBJECTS_DIR
 
@@ -25,18 +26,21 @@ module load freesurfer
 
 export SUBJECTS_DIR=$temp
 
-cd $MRI_DIR
+cd $MRI_DIR || exit 1
 
 dirnames=(*/)
 sub_dir=${dirnames[$SLURM_ARRAY_TASK_ID]}
 sub=${sub_dir%?}
-printf -v sub "%03d" $sub
-files=("$sub_dir"/*.dcm)
-file="${files[0]}"
-if [ -n "$file" ]
-  then
-    echo "${sub}"
-    echo "${file}"
-    srun recon-all -s "${sub}" -i "${file}" -all
+if [ -n "$sub" ]
+then
+  printf -v sub "%03d" "$sub"
+  files=("$sub_dir"/*.dcm)
+  file="${files[0]}"
+  if [ -n "$file" ]
+    then
+      echo "${sub}"
+      echo "${file}"
+      srun recon-all -s "${sub}" -i "${file}" -all
+  fi
 fi
 
