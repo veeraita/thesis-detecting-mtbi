@@ -19,7 +19,7 @@ fi
 ls /m/nbe/
 cd $ER_DIR || exit 1
 
-for f in $(find "$ER_DIR" -name "*sss.fif"); do
+for f in $(find "$ER_DIR" -name "*.fif"); do
   pwd
   python $cwd/noisecov.py $f $OUTPUT_DIR
 done
