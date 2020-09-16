@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=0-00:30:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --array=0-10
+#SBATCH --array=0-9
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
 if  [ -z "$INPUT_DIR" ]

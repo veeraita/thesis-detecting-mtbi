@@ -10,6 +10,8 @@ import os
 import sys
 import glob
 
+from visualize import *
+
 
 def create_source_space(subj, ico4_fname, subjects_dir):
     try:
@@ -33,7 +35,6 @@ def make_bem_solution(subj, bemmodel_fname, bemsolution_fname, subjects_dir):
     except:
         bem_sol = mne.make_bem_solution(model)
         mne.write_bem_solution(bemsolution_fname, bem_sol)
-
     return bem_sol
 
 
@@ -60,18 +61,19 @@ def make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_d
                                                   pick_ori=None, label=None, nave=1, pca=True, \
                                                   prepared=False)
         stc.save(stc_fname)
-    morph = mne.compute_source_morph(stc, subject_from='sub-' + subj, subject_to='fsaverage', subjects_dir=subjects_dir)
+    morph = mne.compute_source_morph(stc, subject_from=subj, subject_to='fsaverage', subjects_dir=subjects_dir)
     stc_fsaverage = morph.apply(stc)
     stc_fsaverage.save(fsaverage_fname)
 
 
 def process_subject(subj, input_dir, subjects_dir, output_dir):
     scr_dir = os.path.join(output_dir, subj, 'src')
-    bem_sol_dir = os.path.join(output_dir, subj, 'bem')
+    bem_dir = os.path.join(output_dir, subj, 'bem')
     inv_dir = os.path.join(output_dir, subj, 'inv')
     psd_dir = os.path.join(output_dir, subj, 'psd')
+    fig_dir = os.path.join(output_dir, subj, 'fig')
 
-    for d in [scr_dir, bem_sol_dir, inv_dir, psd_dir]:
+    for d in [scr_dir, bem_dir, inv_dir, psd_dir, fig_dir]:
         os.makedirs(d, exist_ok=True)
 
     meg_files = glob.glob(os.path.join(input_dir, subj + '_*.fif'))
@@ -81,8 +83,8 @@ def process_subject(subj, input_dir, subjects_dir, output_dir):
 
     raw_fname = meg_files[0]
     ico4_fname = os.path.join(scr_dir, subj + '-ico4-src.fif')
-    bemmodel_fname = os.path.join(subjects_dir, subj, 'bem', subj + '-head.fif')
-    bemsolution_fname = os.path.join(bem_sol_dir, subj + '-bem-sol.fif')
+    bemmodel_fname = os.path.join(bem_dir, subj + '-bem.fif')
+    bemsolution_fname = os.path.join(bem_dir, subj + '-bem-sol.fif')
     trans_fname = os.path.join(output_dir, subj, 'trans', subj + '-new-hs-AR-trans.fif')
     cov_fname = os.path.join(output_dir, subj, 'cov', subj + '-cov.fif')
     inv_fname = os.path.join(inv_dir, subj + '-inv.fif')
@@ -90,9 +92,15 @@ def process_subject(subj, input_dir, subjects_dir, output_dir):
     fsaverage_fname = os.path.join(psd_dir, subj + '-psd-fsaverage')
 
     src = create_source_space(subj, ico4_fname, subjects_dir)
+    visualize_source_space(ico4_fname, os.path.join(fig_dir, subj + '-src.png'), subjects_dir, subj)
+
     bem_sol = make_bem_solution(subj, bemmodel_fname, bemsolution_fname, subjects_dir)
+    visualize_bem(os.path.join(fig_dir, subj + '-bem.png'), subjects_dir, subj)
+
     inv = make_inverse_model(inv_fname, raw_fname, cov_fname, trans_fname, src, bem_sol)
     make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_dir)
+    visualize_stc(stc_fname, os.path.join(fig_dir, subj + '-stc.png'), subjects_dir, subj)
+    visualize_psd(stc_fname, os.path.join(fig_dir, subj + '-psd.png'), subj)
 
 
 if __name__ == "__main__":
