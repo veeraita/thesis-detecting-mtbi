@@ -1,7 +1,7 @@
 function rc = getfid(subj)
 
     subj
-    addpath(fullfile(spm('Dir'),'external','fieldtrip'));
+    addpath(fullfile(spm('Dir'), 'external', 'fieldtrip'));
     clear ft_defaults
     clear global ft_default
     ft_defaults;
@@ -11,12 +11,18 @@ function rc = getfid(subj)
     
     input_dir = getenv('MRI_DIR');
     subjects_dir = getenv('SUBJECTS_DIR');
-    pattern = fullfile(input_dir, subj, '*.nii');
-    fnames = dir(pattern);
-    fnames = {fnames.name};
-    fname = fnames{1}
-    mesh = spm_eeg_inv_mesh(fullfile(input_dir, subj, fname), 3);
-    subj = sprintf('%03d', str2num(subj));
+
+    if contains(input_dir, 'camcan')
+        fname = fullfile(input_dir, subj, 'anat', strcat(subj, '_T1w.nii'))
+    else
+        pattern = fullfile(input_dir, subj, '*.nii');
+        fnames = dir(pattern);
+        fnames = {fnames.name};
+        fname = fnames{1};
+        fname = fullfile(input_dir, subj, fname)
+        subj = sprintf('%03d', str2num(subj));
+    end
+    mesh = spm_eeg_inv_mesh(fname, 3);
     fid_fname = fullfile(subjects_dir, subj, 'bem', strcat(subj, '-fiducials.fif'))
     fid = [mesh.fid.fid.pnt ones(5,1)];
     fid = fid*mesh.Affine';

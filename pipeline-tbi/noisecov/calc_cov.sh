@@ -16,10 +16,9 @@ then
   echo "OUTPUT_DIR not set, exiting"
   exit 1
 fi
-ls /m/nbe/
+
 cd $ER_DIR || exit 1
 
 for f in $(find "$ER_DIR" -name "*.fif"); do
-  pwd
   python $cwd/noisecov.py $f $OUTPUT_DIR
 done

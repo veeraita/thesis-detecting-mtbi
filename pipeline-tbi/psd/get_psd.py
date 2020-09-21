@@ -57,16 +57,16 @@ def make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_d
         stc = mne.read_source_estimate(stc_fname)
     except:
         stc = mne.minimum_norm.compute_source_psd(raw, inv, lambda2=0.1111111111111111, method='dSPM', tmin=None, \
-                                                  tmax=None, fmin=0.0, fmax=40.0, n_fft=2048 * 4, overlap=0.5,
+                                                  tmax=None, fmin=1.0, fmax=40.0, n_fft=2048 * 4, overlap=0.5,
                                                   pick_ori=None, label=None, nave=1, pca=True, \
-                                                  prepared=False)
+                                                  prepared=False, dB=True)
         stc.save(stc_fname)
     morph = mne.compute_source_morph(stc, subject_from=subj, subject_to='fsaverage', subjects_dir=subjects_dir)
     stc_fsaverage = morph.apply(stc)
     stc_fsaverage.save(fsaverage_fname)
 
 
-def process_subject(subj, input_dir, subjects_dir, output_dir):
+def process_subject(subj, subjects_dir, output_dir, tasks=['EO']):
     scr_dir = os.path.join(output_dir, subj, 'src')
     bem_dir = os.path.join(output_dir, subj, 'bem')
     inv_dir = os.path.join(output_dir, subj, 'inv')
@@ -76,32 +76,37 @@ def process_subject(subj, input_dir, subjects_dir, output_dir):
     for d in [scr_dir, bem_dir, inv_dir, psd_dir, fig_dir]:
         os.makedirs(d, exist_ok=True)
 
-    meg_files = glob.glob(os.path.join(input_dir, subj + '_*.fif'))
-    if len(meg_files) == 0:
-        print('No MEG file found, exiting')
-        sys.exit()
-
-    raw_fname = meg_files[0]
-    ico4_fname = os.path.join(scr_dir, subj + '-ico4-src.fif')
-    bemmodel_fname = os.path.join(bem_dir, subj + '-bem.fif')
-    bemsolution_fname = os.path.join(bem_dir, subj + '-bem-sol.fif')
-    trans_fname = os.path.join(output_dir, subj, 'trans', subj + '-new-hs-AR-trans.fif')
-    cov_fname = os.path.join(output_dir, subj, 'cov', subj + '-cov.fif')
-    inv_fname = os.path.join(inv_dir, subj + '-inv.fif')
-    stc_fname = os.path.join(psd_dir, subj + '-psd-dSPM')
-    fsaverage_fname = os.path.join(psd_dir, subj + '-psd-fsaverage')
+    ico4_fname = os.path.join(scr_dir, f'{subj}-ico4-src.fif')
+    bemmodel_fname = os.path.join(bem_dir, f'{subj}-bem.fif')
+    bemsolution_fname = os.path.join(bem_dir, f'{subj}-bem-sol.fif')
+    cov_fname = os.path.join(output_dir, subj, 'cov', f'{subj}-cov.fif')
 
     src = create_source_space(subj, ico4_fname, subjects_dir)
-    visualize_source_space(ico4_fname, os.path.join(fig_dir, subj + '-src.png'), subjects_dir, subj)
+    visualize_source_space(ico4_fname, os.path.join(fig_dir, f'{subj}-src.png'), subjects_dir, subj)
 
     bem_sol = make_bem_solution(subj, bemmodel_fname, bemsolution_fname, subjects_dir)
-    visualize_bem(os.path.join(fig_dir, subj + '-bem.png'), subjects_dir, subj)
+    visualize_bem(os.path.join(fig_dir, f'{subj}-bem.png'), subjects_dir, subj)
 
-    inv = make_inverse_model(inv_fname, raw_fname, cov_fname, trans_fname, src, bem_sol)
-    make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_dir)
-    visualize_stc(stc_fname, os.path.join(fig_dir, subj + '-stc.png'), subjects_dir, subj)
-    visualize_psd(stc_fname, os.path.join(fig_dir, subj + '-psd.png'), subj)
+    for task in tasks:
+        raw_fname = os.path.join(output_dir, subj, 'ica', f'{subj}-{task}-ica-recon.fif')
+        #raw_fname = f'/scratch/work/italinv1/tbi/meg/{subject}_{task}_tsss_mc.fif'
+        trans_fname = os.path.join(output_dir, subj, 'trans', f'{subj}-{task}-new-hs-AR-trans.fif')
+        inv_fname = os.path.join(inv_dir, f'{subj}-{task}-inv.fif')
+        stc_fname = os.path.join(psd_dir, f'{subj}-{task}-psd-dSPM')
+        fsaverage_fname = os.path.join(psd_dir, f'{subj}-{task}-psd-fsaverage')
+
+        inv = make_inverse_model(inv_fname, raw_fname, cov_fname, trans_fname, src, bem_sol)
+        make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_dir)
+        visualize_stc(stc_fname, os.path.join(fig_dir, f'{subj}-{task}-stc.png'), subjects_dir, subj)
+        visualize_psd(stc_fname, os.path.join(fig_dir, f'{subj}-{task}-psd.png'), subj)
 
 
 if __name__ == "__main__":
-    process_subject(*sys.argv[1:])
+    subject = sys.argv[1]
+    subjects_dir = sys.argv[2]
+    output_dir = sys.argv[3]
+    if 'camcan' in subjects_dir:
+        tasks = ['rest']
+    else:
+        tasks = ['EO', 'EC']
+    process_subject(subject, subjects_dir, output_dir, tasks=tasks)

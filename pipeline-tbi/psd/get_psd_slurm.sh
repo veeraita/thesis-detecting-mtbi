@@ -1,14 +1,8 @@
 #!/bin/bash
-#SBATCH --time=0-00:30:00
+#SBATCH --time=0-01:00:00
 #SBATCH --mem-per-cpu=4000
 #SBATCH --array=0-9
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
-
-if  [ -z "$INPUT_DIR" ]
-then
-  echo "INPUT_DIR not set, exiting"
-  exit 1
-fi
 
 if  [ -z "$SUBJECTS_DIR" ]
 then
@@ -22,7 +16,6 @@ then
   exit 1
 fi
 
-echo "INPUT_DIR set as $INPUT_DIR"
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 echo "OUTPUT_DIR set as $OUTPUT_DIR"
 
@@ -46,7 +39,7 @@ do
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    srun python /scratch/nbe/tbi-meg/veera/pipeline/psd/get_psd.py ${sub} ${INPUT_DIR} ${SUBJECTS_DIR} ${OUTPUT_DIR}
+    srun python /scratch/nbe/tbi-meg/veera/pipeline/psd/get_psd.py ${sub} ${SUBJECTS_DIR} ${OUTPUT_DIR}
   fi
 done
 

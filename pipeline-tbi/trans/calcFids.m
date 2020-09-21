@@ -22,6 +22,9 @@ function rc = calcFids(idx)
     input_dir = getenv('MRI_DIR')
     D = dir(input_dir);
     D = D(~startsWith({D.name},'.'));
+    if contains(input_dir, 'camcan')
+       D = D(startsWith({D.name}, 'sub-'));
+    end
     
     %idx = str2num(idx)
     for i = (blockSize*idx+1):min(((1+idx)*blockSize),numel(D))
