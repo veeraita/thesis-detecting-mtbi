@@ -43,16 +43,14 @@ def visualize_stc(stc_fname, fig_fname, subjects_dir, subject):
     print('Visualizing source estimate...')
     stc = mne.read_source_estimate(stc_fname, subject=subject)
     plt.figure()
-    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=10.,
-             clim=dict(kind='value', lims=[45, 55, 65]), hemi='lh')
+    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=10., hemi='lh')
     lh_fig_fname = fig_fname.replace('.png', '-lh.png')
     plt.savefig(lh_fig_fname)
     print('Saving figure (left hemisphere)...')
     plt.savefig(lh_fig_fname)
     print('Figure saved in', lh_fig_fname)
 
-    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=10.,
-             clim=dict(kind='value', lims=[45, 55, 65]), hemi='rh')
+    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=10., hemi='rh')
     print('Saving figure (right hemisphere)...')
     rh_fig_fname = fig_fname.replace('.png', '-rh.png')
     plt.savefig(rh_fig_fname)
