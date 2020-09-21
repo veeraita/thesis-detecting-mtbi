@@ -35,7 +35,7 @@ do
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    srun python -c "import mne; mne.bem.make_watershed_bem(\"${sub}\", subjects_dir=\"${SUBJECTS_DIR}\")"
+    srun python -c "import mne; mne.bem.make_watershed_bem(\"${sub}\", subjects_dir=\"${SUBJECTS_DIR}\", overwrite=True)"
   fi
 done
 
