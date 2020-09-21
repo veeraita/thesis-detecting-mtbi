@@ -4,12 +4,6 @@
 #SBATCH --array=0-5
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
-if  [ -z "$INPUT_DIR" ]
-then
-  echo "INPUT_DIR not set, exiting"
-  exit 1
-fi
-
 if  [ -z "$SUBJECTS_DIR" ]
 then
   echo "SUBJECTS_DIR not set, exiting"
@@ -22,7 +16,6 @@ then
   exit 1
 fi
 
-echo "INPUT_DIR set as $INPUT_DIR"
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 echo "OUTPUT_DIR set as $OUTPUT_DIR"
 
@@ -43,6 +36,6 @@ do
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    srun xvfb-run -a python /scratch/nbe/tbi-meg/veera/pipeline/trans/calc_trans.py ${sub} ${INPUT_DIR} ${SUBJECTS_DIR} ${OUTPUT_DIR}
+    srun xvfb-run -a python /scratch/nbe/tbi-meg/veera/pipeline/trans/calc_trans.py ${sub} ${SUBJECTS_DIR} ${OUTPUT_DIR}
   fi
 done
