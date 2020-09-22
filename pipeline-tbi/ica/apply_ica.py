@@ -18,7 +18,7 @@ def main(subj, task, raw_fname, output_dir):
     ica.apply(raw)
 
     out_fname = os.path.join(ica_dir, f'{subj}-{task}-ica-recon.fif')
-    raw.save(out_fname)
+    raw.save(out_fname, overwrite=True)
 
 
 if __name__ == "__main__":
