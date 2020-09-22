@@ -41,7 +41,10 @@ do
   sub=${f%%_*}
   task=${f#*_}
   task=${task%%_*}
-  echo "$sub"
-  echo "$task"
-  xvfb-run -a python /scratch/nbe/tbi-meg/veera/pipeline/ica/run_ica.py "${sub}" "${task}" "${INPUT_DIR}"/"${f}" "${OUTPUT_DIR}"
+  if [ -n "$sub" ]
+  then
+    echo "$sub"
+    echo "$task"
+    srun xvfb-run -a python /scratch/nbe/tbi-meg/veera/pipeline/ica/run_ica.py "${sub}" "${task}" "${INPUT_DIR}"/"${f}" "${OUTPUT_DIR}"
+  fi
 done
