@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --time=0-01:00:00
+#SBATCH --time=0-01:30:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --array=0-9
+#SBATCH --array=0-14
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
 if  [ -z "$SUBJECTS_DIR" ]
@@ -22,12 +22,14 @@ echo "OUTPUT_DIR set as $OUTPUT_DIR"
 ml purge
 module load teflon
 ml anaconda3
-source activate mne
+conda init bash >/dev/null 2>&1
+source ~/.bashrc
+conda activate mne
 
 
 cd $SUBJECTS_DIR
 
-CHUNKSIZE=5
+CHUNKSIZE=3
 n=$SLURM_ARRAY_TASK_ID
 indexes=`seq $((n*CHUNKSIZE)) $(((n + 1)*CHUNKSIZE - 1))`
 

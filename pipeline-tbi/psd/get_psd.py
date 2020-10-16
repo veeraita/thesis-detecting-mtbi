@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 31 16:12:31 2018
-
-@author: rantala2
-"""
 
 import mne
 import os
 import sys
 import glob
 
-from visualize import *
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_PATH)
+
+from visualize.visualize import *
+
+spacing = 4
 
 
-def create_source_space(subj, ico4_fname, subjects_dir):
+def create_source_space(subj, src_fname, subjects_dir):
     try:
-        src = mne.read_source_spaces(ico4_fname)
+        src = mne.read_source_spaces(src_fname)
     except:
-        src = mne.setup_source_space(subj, spacing='ico4', subjects_dir=subjects_dir)
-        mne.write_source_spaces(ico4_fname, src)
+        src = mne.setup_source_space(subj, spacing=f'ico{spacing}', subjects_dir=subjects_dir)
+        mne.write_source_spaces(src_fname, src)
 
     return src
 
@@ -61,12 +61,13 @@ def make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_d
                                                   pick_ori=None, label=None, nave=1, pca=True, \
                                                   prepared=False, dB=True)
         stc.save(stc_fname)
-    morph = mne.compute_source_morph(stc, subject_from=subj, subject_to='fsaverage', subjects_dir=subjects_dir)
+    morph = mne.compute_source_morph(stc, subject_from=subj, subject_to='fsaverage', subjects_dir=subjects_dir,
+                                     spacing=spacing)
     stc_fsaverage = morph.apply(stc)
     stc_fsaverage.save(fsaverage_fname)
 
 
-def process_subject(subj, subjects_dir, output_dir, tasks=['EO']):
+def process_subject(subj, subjects_dir, output_dir, tasks=['EC']):
     scr_dir = os.path.join(output_dir, subj, 'src')
     bem_dir = os.path.join(output_dir, subj, 'bem')
     inv_dir = os.path.join(output_dir, subj, 'inv')
@@ -76,12 +77,12 @@ def process_subject(subj, subjects_dir, output_dir, tasks=['EO']):
     for d in [scr_dir, bem_dir, inv_dir, psd_dir, fig_dir]:
         os.makedirs(d, exist_ok=True)
 
-    ico4_fname = os.path.join(scr_dir, f'{subj}-ico4-src.fif')
+    src_fname = os.path.join(scr_dir, f'{subj}-ico{spacing}-src.fif')
     bemmodel_fname = os.path.join(bem_dir, f'{subj}-bem.fif')
     bemsolution_fname = os.path.join(bem_dir, f'{subj}-bem-sol.fif')
     cov_fname = os.path.join(output_dir, subj, 'cov', f'{subj}-cov.fif')
 
-    src = create_source_space(subj, ico4_fname, subjects_dir)
+    src = create_source_space(subj, src_fname, subjects_dir)
     visualize_source_space(ico4_fname, os.path.join(fig_dir, f'{subj}-src.png'), subjects_dir, subj)
 
     bem_sol = make_bem_solution(subj, bemmodel_fname, bemsolution_fname, subjects_dir)
@@ -97,8 +98,8 @@ def process_subject(subj, subjects_dir, output_dir, tasks=['EO']):
 
         inv = make_inverse_model(inv_fname, raw_fname, cov_fname, trans_fname, src, bem_sol)
         make_source_psd(raw_fname, stc_fname, fsaverage_fname, inv, subj, subjects_dir)
-        visualize_stc(stc_fname, os.path.join(fig_dir, f'{subj}-{task}-stc.png'), subjects_dir, subj)
-        visualize_psd(stc_fname, os.path.join(fig_dir, f'{subj}-{task}-psd.png'), subj)
+        visualize_stc(fsaverage_fname, os.path.join(fig_dir, f'{subj}-{task}-stc-fsaverage.png'), subjects_dir, subj)
+        visualize_psd(fsaverage_fname, os.path.join(fig_dir, f'{subj}-{task}-psd-fsaverage.png'), subj)
 
 
 if __name__ == "__main__":
