@@ -107,7 +107,7 @@ def main():
                 ecg_inds = ica.labels_.get('ecg', [])
                 eog_inds = ica.labels_.get('eog/corrmap', [])
 
-            n_max_ecg, n_max_eog = 2, 1
+            n_max_ecg, n_max_eog = 2, 2
 
             if ecg_inds is not None and len(ecg_inds) > n_max_ecg:
                 ecg_inds = ecg_inds[:n_max_ecg]

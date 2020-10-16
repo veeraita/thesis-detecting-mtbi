@@ -1,7 +1,8 @@
 #!/bin/bash
-#SBATCH --time=0-01:00:00
+#SBATCH --time=0-00:40:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --output=./slurm_logs/slurm-%A.out
+#SBATCH --array=0-7
+#SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
 if  [ -z "$INPUT_DIR" ]
 then
@@ -27,17 +28,23 @@ source activate mne
 
 cd "$INPUT_DIR" || exit 1
 
+CHUNKSIZE=15
+n=$SLURM_ARRAY_TASK_ID
+
 rm "$OUTPUT_DIR"/no_*_matches.txt 2> /dev/null
 
 if [ -n "$SUBJECT" ]
 then
   filenames=("$SUBJECT"_*_tsss_mc.fif)
+  indexes=0
 else
   filenames=(*_tsss_mc.fif)
+  indexes=`seq $((n*CHUNKSIZE)) $(((n + 1)*CHUNKSIZE - 1))`
 fi
 
-for f in "${filenames[@]}"
+for i in $indexes
 do
+  f=${filenames[$i]}
   sub=${f%%_*}
   task=${f#*_}
   task=${task%%_*}

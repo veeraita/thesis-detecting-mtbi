@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def fit_ica(raw, fmin=1., fmax=40., tmax=120., n_components=0.95, method='fastica', max_iter=200, decim=None,
+def fit_ica(raw, fmin=1., fmax=40., tmax=300., n_components=0.95, method='fastica', max_iter=200, decim=None,
             reject=None):
     """Filter data and fit the ICA model"""
-    raw.crop(tmax=tmax)
     filt_raw = raw.copy()
+    filt_raw.crop(tmax=tmax)
     filt_raw.load_data().filter(l_freq=fmin, h_freq=fmax, n_jobs=2)
 
     ica = ICA(n_components=n_components, method=method, max_iter=max_iter, random_state=97)
@@ -72,6 +72,8 @@ def plot_ica_results(ica, raw, ecg_inds, ecg_scores, eog_inds, eog_scores, t_off
     captions.append('ICs applied to raw data, with ECG matches highlighted')
 
     if eog_scores is not None and len(eog_scores) > 0:
+        if np.array(eog_scores).ndim == 2:
+            eog_scores = eog_scores[0]
         eog_show_picks = np.abs(eog_scores).argsort()[::-1][:5]
         for i in eog_inds:
             if i not in eog_show_picks:
@@ -140,37 +142,40 @@ def main(subj, task, raw_fname, output_dir, overwrite=False, show=False):
         return
 
     ica = fit_ica(raw, decim=3, reject=dict(mag=5e-12, grad=5000e-13))
+    # try:
+    #     ica = mne.preprocessing.read_ica(out_fname)
+    # except FileNotFoundError:
+    #     return
     ecg_inds, ecg_scores, eog_inds, eog_scores = get_excludes(ica, raw)
+    #ecg_inds = ica.labels_['ecg']
+    #eog_inds = ica.labels_['eog']
     print("ECG ICs:", ecg_inds)
     print("EOG ICs:", eog_inds)
 
     if ecg_inds is not None and len(ecg_inds) == 0:
         print("No ECG matches found!")
-        with open(os.path.join(output_dir, 'no_ecg_matches.txt'), 'a+') as f:
+        with open(os.path.join(output_dir, 'no_ecg_matches2.txt'), 'a+') as f:
             f.write(subj + ' ' + task + '\n')
     if eog_inds is not None and len(eog_inds) == 0:
         print("No EOG matches found!")
-        with open(os.path.join(output_dir, 'no_eog_matches.txt'), 'a+') as f:
+        with open(os.path.join(output_dir, 'no_eog_matches2.txt'), 'a+') as f:
             f.write(subj + ' ' + task + '\n')
 
-    n_max_ecg, n_max_eog = 2, 1
+    n_max_ecg, n_max_eog = 2, 2
 
     if ecg_inds is not None and len(ecg_inds) > n_max_ecg:
         ecg_inds = ecg_inds[:n_max_ecg]
     if eog_inds is not None and len(eog_inds) > n_max_eog:
         eog_inds = eog_inds[:n_max_eog]
-    if np.array(eog_scores).ndim == 2:
-        eog_scores = eog_scores[0]
 
     report_fname = os.path.join(ica_dir, f'{subj}-{task}-ica-report.html')
     figs, captions = plot_ica_results(ica, raw, ecg_inds, ecg_scores, eog_inds, eog_scores, show=show)
     create_report(subj, task, raw_fname, report_fname, figs, captions)
 
-    ica.exclude = ecg_inds
-    ica.exclude += eog_inds
+    ica.exclude = ecg_inds + eog_inds
 
     ica.save(out_fname)
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:], overwrite=True, show=True)
+    main(*sys.argv[1:], overwrite=False, show=False)

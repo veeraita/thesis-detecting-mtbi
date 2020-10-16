@@ -26,6 +26,8 @@ fi
 ml purge
 module load teflon
 ml anaconda3
-source activate mne
+conda init bash >/dev/null 2>&1
+source ~/.bashrc
+conda activate mne
 
-python /scratch/nbe/tbi-meg/veera/pipeline/ica/run_ica_corrmap.py "${AR_TYPE}"
+python /scratch/nbe/tbi-meg/veera/pipeline/ica/run_ica_corrmap.py 1 "${AR_TYPE}"
