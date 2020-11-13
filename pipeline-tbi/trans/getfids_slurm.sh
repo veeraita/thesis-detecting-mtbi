@@ -27,5 +27,3 @@ module load freesurfer
 export SUBJECTS_DIR=$temp
 
 srun matlab -nosplash -nodesktop -r "try; cd $PWD; disp(pwd); calcFids($SLURM_ARRAY_TASK_ID); catch e; disp(e); end; exit";
-
-

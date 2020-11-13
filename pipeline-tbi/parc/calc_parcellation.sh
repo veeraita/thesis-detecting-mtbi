@@ -1,16 +1,7 @@
 #!/bin/bash
 
-if  [ -z "$SUBJECTS_DIR" ]
-then
-  echo "SUBJECTS_DIR not set, exiting"
-  exit 1
-fi
-
-if  [ -z "$OUTPUT_DIR" ]
-then
-  echo "OUTPUT_DIR not set, exiting"
-  exit 1
-fi
+SUBJECTS_DIR=/scratch/work/italinv1/tbi/mri_recons
+OUTPUT_DIR=/scratch/nbe/tbi-meg/veera/processed
 
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 echo "OUTPUT_DIR set as $OUTPUT_DIR"

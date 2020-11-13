@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-10:00:00
 #SBATCH --mem-per-cpu=8000    # 8000MB of memory
 #SBATCH --array=0-47
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out

@@ -5,7 +5,7 @@ import sys
 import glob
 
 
-def calc_trans(subj, meg_file, subjects_dir, output_dir, task='EO'):
+def calc_trans(subj, meg_file, subjects_dir, output_dir, task='EO', i='full'):
     print(meg_file)
 
     cm = CoregModel()
@@ -27,7 +27,7 @@ def calc_trans(subj, meg_file, subjects_dir, output_dir, task='EO'):
 
     trans_dir = os.path.join(output_dir, subj, 'trans')
     os.makedirs(trans_dir, exist_ok=True)
-    cm.save_trans(os.path.join(trans_dir, f'{subj}-{task}-new-hs-AR-trans.fif'))
+    cm.save_trans(os.path.join(trans_dir, f'{subj}-{task}-{i}-new-hs-AR-trans.fif'))
 
 
 if __name__ == "__main__":
@@ -38,8 +38,9 @@ if __name__ == "__main__":
     if 'camcan' in subjects_dir:
         tasks = ['rest']
     else:
-        tasks = ['EO', 'EC']
+        tasks = ['EC']
 
     for task in tasks:
-        meg_file = os.path.join(output_dir, subject, 'ica', f'{subject}-{task}-ica-recon.fif')
-        calc_trans(subject, meg_file, subjects_dir, output_dir, task=task)
+        for i in range(40, 390, 50):
+            meg_file = os.path.join(output_dir, subject, 'ica', f'{subject}-{task}-{i}-ica-recon.fif')
+            calc_trans(subject, meg_file, subjects_dir, output_dir, task=task, i=str(i))

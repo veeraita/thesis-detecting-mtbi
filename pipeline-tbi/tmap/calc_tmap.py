@@ -13,7 +13,7 @@ from visualize.visualize import visualize_stc
 
 def calc_tmap(subject, task, data_dir, avg_stc_fpath, var_stc_fpath, outfile):
     stc_fpath = os.path.join(data_dir, subject, 'psd', f'{subject}-{task}-psd-fsaverage')
-    sub_stc = mne.read_source_estimate(stc_fpath, subject)
+    sub_stc = mne.read_source_estimate(stc_fpath, 'fsaverage')
     avg_stc = mne.read_source_estimate(avg_stc_fpath, 'normative-avg')
     var_stc = mne.read_source_estimate(var_stc_fpath, 'normative-var')
     sd = np.sqrt(var_stc.data)

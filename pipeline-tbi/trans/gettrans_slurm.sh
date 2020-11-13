@@ -1,26 +1,21 @@
 #!/bin/bash
 #SBATCH --time=0-00:30:00
 #SBATCH --mem-per-cpu=8000
-#SBATCH --array=0-5
+#SBATCH --array=0-4
 #SBATCH --output=./slurm_logs/slurm-%A_%a.out
 
-if  [ -z "$SUBJECTS_DIR" ]
-then
-  echo "SUBJECTS_DIR not set, exiting"
-  exit 1
-fi
-
-if  [ -z "$OUTPUT_DIR" ]
-then
-  echo "OUTPUT_DIR not set, exiting"
-  exit 1
-fi
+SUBJECTS_DIR=/scratch/work/italinv1/tbi/mri_recons
+OUTPUT_DIR=/scratch/nbe/tbi-meg/veera/processed
 
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 echo "OUTPUT_DIR set as $OUTPUT_DIR"
 
+ml purge
+module load teflon
 ml anaconda3
-source activate mne
+conda init bash >/dev/null 2>&1
+source ~/.bashrc
+conda activate mne
 
 cd $SUBJECTS_DIR || exit 1
 

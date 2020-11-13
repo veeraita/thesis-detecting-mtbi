@@ -37,8 +37,8 @@ def get_fsaverage_fname(subj, data_dir, other_data_dir=None):
 
 def plot_avg_psd(stc_avg, stc_var, outfile):
     x = stc_avg.times
-    y = stc_avg.data.mean(axis=0)
-    dy = np.sqrt(stc_var.data.mean(axis=0))
+    y = 10 * np.log10(stc_avg.data.mean(axis=0))
+    dy = np.sqrt(10 * np.log10(stc_var.data.mean(axis=0)))
     plt.figure()
     plt.plot(x, y)
     plt.fill_between(x, y - dy, y + dy, color='gray', alpha=0.2)
@@ -95,15 +95,15 @@ def get_cohorts(data_dir, group='total', other_data_dir=None):
         subjects = [s for s in all_subjects if s in controls] + \
                    sorted([f.name for f in os.scandir(other_data_dir) if f.is_dir() and
                            (f.name in controls or f.name.startswith('sub-'))])
+    elif group == 'all':
+        subjects = all_subjects + sorted([f.name for f in os.scandir(other_data_dir) if f.is_dir()])
     else:
         subjects = all_subjects
 
-    for idx in range(1, 8):
-        cohorts[idx] = [s for s in subjects if s[-12:-5] == ('sub-CC' + str(idx))]
 
     for subj in subjects:
         if subj.startswith('sub-CC'):
-            cohort_idx = subj[6]
+            cohort_idx = int(subj[6])
         else:
             try:
                 raw_fname = os.path.join(data_dir, subj, 'ica', f'{subj}-EC-ica-recon.fif')

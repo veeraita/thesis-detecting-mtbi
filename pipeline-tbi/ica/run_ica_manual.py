@@ -25,7 +25,7 @@ def run_ica_manual(subj, task, raw_fname, output_dir, fit=False, all_manual=Fals
         ica = read_ica(ica_fname)
         ecg_inds = ica.labels_.get('ecg', [])
         eog_inds = ica.labels_.get('eog', [])
-        if len(ecg_inds) > 0 and (len(eog_inds) > 0 or task != 'EO'):
+        if len(ecg_inds) > 0 and (len(eog_inds) > 0 or task != 'EO') and not all_manual:
             print("Nothing to be done for subject", subj)
             return
 
@@ -59,7 +59,7 @@ def run_ica_manual(subj, task, raw_fname, output_dir, fit=False, all_manual=Fals
     else:
         new_ecg_inds = ecg_inds
 
-    if (len(eog_inds) == 0):
+    if (len(eog_inds) == 0) or all_manual:
         ica.exclude = eog_inds
         ica.plot_sources(raw, title="Mark the ICs corresponding to EOG artifacts")
         plt.show()
@@ -75,9 +75,9 @@ def run_ica_manual(subj, task, raw_fname, output_dir, fit=False, all_manual=Fals
 
     n_max_ecg, n_max_eog = 2, 2
 
-    if new_ecg_inds is not None and len(new_ecg_inds) > n_max_ecg:
+    if new_ecg_inds is not None and len(new_ecg_inds) > n_max_ecg and not all_manual:
         new_ecg_inds = new_ecg_inds[:n_max_ecg]
-    if new_eog_inds is not None and len(new_eog_inds) > n_max_eog:
+    if new_eog_inds is not None and len(new_eog_inds) > n_max_eog and not all_manual:
         new_eog_inds = new_eog_inds[:n_max_eog]
 
     if (new_ecg_inds != ecg_inds) or (new_eog_inds != eog_inds) or fit:
