@@ -12,23 +12,22 @@ sys.path.append(BASE_PATH)
 
 from visualize.visualize import *
 
-
+cases = ['%03d' % n for n in range(28)]
 controls = ['%03d' % n for n in range(28, 48)]
 
+camcan_dir = '/scratch/nbe/restmeg/veera/processed/'
+tbi_dir = '/scratch/nbe/tbi-meg/veera/processed'
+subjects_dir = '/scratch/work/italinv1/tbi/mri_recons'
+averages_output_dir = '/scratch/nbe/tbi-meg/veera/averages'
 
-def get_fsaverage_fname(subj, data_dir, other_data_dir=None):
+
+def get_fsaverage_fname(subj):
     if subj.startswith('sub-'):
         task = 'rest'
-        if 'restmeg' in data_dir or not other_data_dir:
-            psd_dir = os.path.join(data_dir, subj, 'psd')
-        else:
-            psd_dir = os.path.join(other_data_dir, subj, 'psd')
+        psd_dir = os.path.join(camcan_dir, subj, 'psd')
     else:
         task = 'EC'
-        if 'restmeg' in data_dir and other_data_dir:
-            psd_dir = os.path.join(other_data_dir, subj, 'psd')
-        else:
-            psd_dir = os.path.join(data_dir, subj, 'psd')
+        psd_dir = os.path.join(tbi_dir, subj, 'psd')
 
     fsaverage_fname = os.path.join(psd_dir, f'{subj}-{task}-psd-fsaverage')
 
@@ -48,11 +47,11 @@ def plot_avg_psd(stc_avg, stc_var, outfile):
     plt.savefig(outfile)
 
 
-def get_avg_psd(subjs, data_dir, other_data_dir=None):
+def get_avg_psd(subjs):
     j = 1
-    fsaverage_fname = get_fsaverage_fname(subjs[0], data_dir, other_data_dir)
+    fsaverage_fname = get_fsaverage_fname(subjs[0])
     while not os.path.exists(fsaverage_fname + '-lh.stc'):
-        fsaverage_fname = get_fsaverage_fname(subjs[j], data_dir, other_data_dir)
+        fsaverage_fname = get_fsaverage_fname(subjs[j])
         j += 1
 
     stc_avg = mne.read_source_estimate(fsaverage_fname, 'fsaverage')
@@ -64,7 +63,7 @@ def get_avg_psd(subjs, data_dir, other_data_dir=None):
     for s in subjs[j:]:
         print(s)
         try:
-            fsaverage_fname = get_fsaverage_fname(s, data_dir, other_data_dir)
+            fsaverage_fname = get_fsaverage_fname(s)
             stc_c = mne.read_source_estimate(fsaverage_fname, 'fsaverage')
 
             stc_avg += stc_c
@@ -84,29 +83,25 @@ def get_avg_psd(subjs, data_dir, other_data_dir=None):
     return stc_avg, stc_var
 
 
-def get_cohorts(data_dir, group='total', other_data_dir=None):
+def get_cohorts(group='total'):
     cohorts = defaultdict(list)
-    all_subjects = sorted([f.name for f in os.scandir(data_dir) if f.is_dir()])
+    all_subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()] + \
+                          [f.name for f in os.scandir(tbi_dir) if f.is_dir()])
     if group == 'case':
-        subjects = [s for s in all_subjects if s not in controls]
+        subjects = [s for s in all_subjects if s in cases]
     elif group == 'control':
         subjects = [s for s in all_subjects if s in controls]
     elif group == 'normative':
-        subjects = [s for s in all_subjects if s in controls] + \
-                   sorted([f.name for f in os.scandir(other_data_dir) if f.is_dir() and
-                           (f.name in controls or f.name.startswith('sub-'))])
-    elif group == 'all':
-        subjects = all_subjects + sorted([f.name for f in os.scandir(other_data_dir) if f.is_dir()])
+        subjects = [s for s in all_subjects if s not in cases]
     else:
         subjects = all_subjects
-
 
     for subj in subjects:
         if subj.startswith('sub-CC'):
             cohort_idx = int(subj[6])
         else:
             try:
-                raw_fname = os.path.join(data_dir, subj, 'ica', f'{subj}-EC-ica-recon.fif')
+                raw_fname = os.path.join(tbi_dir, subj, 'ica', f'{subj}-EC-ica-recon.fif')
                 raw = mne.io.Raw(raw_fname)
             except FileNotFoundError:
                 continue
@@ -124,7 +119,7 @@ def get_cohorts(data_dir, group='total', other_data_dir=None):
     return cohorts
 
 
-def get_cohort(cohorts, idx, data_dir, subjects_dir, averages_output_dir, group='total', other_data_dir=None):
+def get_cohort(cohorts, idx, group='total'):
     """Calculate averages by age group"""
     if idx < 1 or idx > 7:
         print('Please use index between 1 and 7')
@@ -134,7 +129,7 @@ def get_cohort(cohorts, idx, data_dir, subjects_dir, averages_output_dir, group=
         print('No subjects in cohort', idx)
         return
 
-    stc_avg, stc_var = get_avg_psd(subjects, data_dir, other_data_dir)
+    stc_avg, stc_var = get_avg_psd(subjects)
 
     group_avg_outdir = os.path.join(averages_output_dir, group)
     fig_dir = os.path.join(group_avg_outdir, 'fig')
@@ -150,9 +145,10 @@ def get_cohort(cohorts, idx, data_dir, subjects_dir, averages_output_dir, group=
     visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-stc.png'), subjects_dir, 'fsaverage')
 
 
-def get_all(data_dir, subjects_dir, averages_output_dir, group='total', other_data_dir=None):
+def get_all(group='total'):
     """Calculate average over whole dataset"""
-    all_subjects = sorted([f.name for f in os.scandir(data_dir) if f.is_dir()])
+    all_subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()] + \
+                          [f.name for f in os.scandir(tbi_dir) if f.is_dir()])
 
     if group == 'case':
         subjects = [s for s in all_subjects if s not in controls]
@@ -165,7 +161,7 @@ def get_all(data_dir, subjects_dir, averages_output_dir, group='total', other_da
     else:
         subjects = all_subjects
     
-    stc_avg, stc_var = get_avg_psd(subjects, data_dir, other_data_dir)
+    stc_avg, stc_var = get_avg_psd(subjects)
 
     group_avg_outdir = os.path.join(averages_output_dir, group)
     fig_dir = os.path.join(group_avg_outdir, 'fig')
@@ -181,22 +177,22 @@ def get_all(data_dir, subjects_dir, averages_output_dir, group='total', other_da
     visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-stc.png'), subjects_dir, 'fsaverage')
 
 
-def main(data_dir, subjects_dir, averages_output_dir, group='total', other_data_dir=None):
+def main(group='total'):
     if not group or group not in ['total', 'case', 'control', 'normative']:
         group = 'total'
     print('Group:', group)
 
-    cohorts = get_cohorts(data_dir, group, other_data_dir)
+    cohorts = get_cohorts(group)
     print(cohorts)
     for i in range(1, 8):
         print('Starting cohort: ' + str(i))
-        get_cohort(cohorts, i, data_dir, subjects_dir, averages_output_dir, group, other_data_dir)
+        get_cohort(cohorts, i, group)
 
     if (group == 'normative') and not other_data_dir:
         print("'other_data_dir' is required if group is 'normative'")
         sys.exit(1)
 
-    get_all(data_dir, subjects_dir, averages_output_dir, group, other_data_dir)
+    get_all(group)
 
     
 if __name__ == '__main__':
