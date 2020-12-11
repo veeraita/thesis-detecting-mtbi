@@ -3,22 +3,21 @@
 module load anaconda3
 source activate neuroimaging
 
-cwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null 2>&1 && pwd )"
+OUTPUT_DIR=/scratch/nbe/tbi-meg/veera/processed
 
-if  [ -z "$ER_DIR" ]
-then
-  echo "ER_DIR not set, exiting"
-  exit 1
-fi
+echo "OUTPUT_DIR set as $OUTPUT_DIR"
 
-if  [ -z "$OUTPUT_DIR" ]
-then
-  echo "OUTPUT_DIR not set, exiting"
-  exit 1
-fi
+cd "$OUTPUT_DIR" || exit 1
 
-cd $ER_DIR || exit 1
+dirnames=(*/)
 
-for f in $(find "$ER_DIR" -name "*.fif"); do
-  python $cwd/noisecov.py $f $OUTPUT_DIR
+for d in "${dirnames[@]}"
+do
+  sub=${d%?}
+  if [ -n "$sub" ]
+  then
+    echo "${sub}"
+    srun python /scratch/nbe/tbi-meg/veera/pipeline/noisecov/noisecov.py ${sub} ${OUTPUT_DIR}
+  fi
 done
+
