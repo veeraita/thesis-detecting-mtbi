@@ -6,34 +6,26 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
 from glob import glob
 
+from preprocessing import get_dataset, features_from_df
+
+CASES = ['%03d' % n for n in range(28)]
+
 
 class FOOOFDataset(Dataset):
-    def __init__(self, data_fpath, data_key, transform=None):
+    def __init__(self, data_fpath, data_key, transform=None, index_filter=None):
         self.transform = transform
-        self.cases = ['%03d' % n for n in range(28)]
+        df, y, sample_names = get_dataset(data_fpath, data_key, CASES, 'subject_demographics.csv',
+                                          column_filter='alpha_amp|beta_amp|alpha_width|beta_width|alpha_freq|beta_freq|exponent',
+                                          #column_filter='_amp|alpha_freq|beta_freq',
+                                          index_filter=index_filter, dropna=False)
 
-        df = pd.read_hdf(data_fpath, key=data_key)
-        df = df.apply(lambda col: col.fillna(
-            0) if '_amp' in col.name or '_width' in col.name or 'theta_freq' in col.name else col)
-        # drop columns with more than 10% nans
-        df = df.dropna(thresh=len(df) - int(len(df) / 10), axis=1)
-        # change theta_freq to binary
-        df = df.apply(lambda col: col.where(col == 0, other=1) if 'theta_freq' in col.name else col)
-
-        subject_data = pd.read_csv('subject_demographics.csv').set_index('subject')
-        df['cohort'] = df.apply(lambda row: subject_data.loc[row.name.split('_')[0], 'cohort'], axis=1)
-
-        Xnum = df.filter(regex='alpha|exponent|_amp|_width|cohort').values
-        Xcat = df.filter(regex='theta_freq').values
-        col_mean = np.nanmean(Xnum, axis=0)
-        inds = np.where(np.isnan(Xnum))
-        Xnum[inds] = np.take(col_mean, inds[1])
-        dataset = np.hstack((Xnum, Xcat))
-
-        self.dataset = torch.from_numpy(dataset).float()
-
-        self.subjects = df.index.values
-        self.labels = np.array([1 if s[:3] in self.cases else 0 for s in self.subjects])
+        #subject_data = pd.read_csv('subject_demographics.csv').set_index('subject')
+        #df['cohort'] = df.apply(lambda row: subject_data.loc[row.name.split('_')[0], 'cohort'], axis=1)
+        X, _, feature_names = features_from_df(df)
+        self.dataset = torch.from_numpy(X).float()
+        self.labels = y
+        self.subjects = sample_names
+        self.df = df
 
     def __len__(self):
         return len(self.dataset)
