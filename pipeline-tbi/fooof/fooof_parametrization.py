@@ -22,8 +22,9 @@ def fooof_inparcel(subject, psd, fmin, fmax, aperiodic_mode, labels, output_fnam
 
     bands = Bands({'delta': [1, 4],
                    'theta': [4, 8],
-                   'alpha': [8, 12],
-                   'beta': [15, 30]})
+                   'alpha': [8, 13],
+                   'beta': [13, 30],
+                   'gamma': [30, 40]})
     
     freqs = psd.times
     

@@ -12,7 +12,7 @@ import pandas as pd
 from collections import defaultdict
 
 
-def feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, parc='aparc'):
+def feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, bands, parc='aparc'):
     rows = []
 
     for i, subject in enumerate(subjects):
@@ -32,6 +32,7 @@ def feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, parc='aparc
             amps = defaultdict(list)
             widths = defaultdict(list)
             offsets = []
+            knees =[]
             exponents = []
 
             try:
@@ -39,7 +40,7 @@ def feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, parc='aparc
                 for label, all_params in params.items():
                     if label.startswith('unknown'): continue
 
-                    for band in ['delta', 'theta', 'alpha']:
+                    for band in bands:
                         peak = all_params[f'{band}_peak_params']
                         freqs[band].append(peak[0])
                         amps[band].append(peak[1])
@@ -47,15 +48,20 @@ def feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, parc='aparc
 
                     # Aperiodic params: offset, (knee), exponent
                     aperiodic = all_params['aperiodic_params']
-
                     offsets.append(aperiodic[0])
-                    exponents.append(aperiodic[-1])
+                    if len(aperiodic) == 2:
+                        knees.append(0)
+                        exponents.append(aperiodic[1])
+                    elif len(aperiodic) == 3:
+                        knees.append(aperiodic[1]**(1/aperiodic[2]))
+                        exponents.append(aperiodic[2])
 
-                for band in ['delta', 'theta', 'alpha']:
+                for band in bands:
                     rows.append([subject + '_' + t, f'{band}_freq', *freqs[band]])
                     rows.append([subject + '_' + t, f'{band}_amp', *amps[band]])
                     rows.append([subject + '_' + t, f'{band}_width', *widths[band]])
                 rows.append([subject + '_' + t, 'aperiodic_offset', *offsets])
+                rows.append([subject + '_' + t, 'aperiodic_knee', *knees])
                 rows.append([subject + '_' + t, 'aperiodic_exponent', *exponents])
 
             except OSError as e:
@@ -102,30 +108,20 @@ def main():
     # Create features based on aparc_sub parcellation
     fname = '{}/fooof/{}-{}-{}-{}-fooof-results-1Hz-knee.npy'
 
-    df_features = feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, parc=parc)
-    #print(df_features.head(50))
-    #print(df_features.tail(50))
-    features = ('alpha_freq',
-                'alpha_amp',
-                'alpha_width',
-                'theta_freq',
-                'theta_amp',
-                'theta_width',
-                'delta_freq',
-                'delta_amp',
-                'delta_width',
-                'aperiodic_offset',
-                'aperiodic_exponent'
-                )
+    bands = ['delta', 'theta', 'alpha', 'beta', 'gamma']
+
+    df_features = feature_dataframe_inparcel(subjects, fname, tbi_dir, camcan_dir, bands, parc=parc)
     print(df_features)
+    features = ['aperiodic_offset', 'aperiodic_knee', 'aperiodic_exponent'] + \
+        [b + '_freq' for b in bands] + [b + '_amp' for b in bands] + [b + '_width' for b in bands]
     meg_data_subjects = get_subject_features(df_features, features)
-    meg_data_parcels = get_parcel_features(df_features, features)
+    #meg_data_parcels = get_parcel_features(df_features, features)
     print(meg_data_subjects)
     # Save dataframe
-    feature_fname_subjects = os.path.join(output_dir, f'meg_{parc}_features_subjects_window_v2.h5')
-    feature_fname_parcels = os.path.join(output_dir, f'meg_{parc}_features_parcels_window_v2.h5')
-    meg_data_subjects.to_hdf(feature_fname_subjects, key=f'meg_{parc}_features_subjects_window_v2', mode='w')
-    meg_data_parcels.to_hdf(feature_fname_parcels, key=f'meg_{parc}_features_parcels_window_v2', mode='w')
+    feature_fname_subjects = os.path.join(output_dir, f'meg_{parc}_features_subjects_window_v3.h5')
+    #feature_fname_parcels = os.path.join(output_dir, f'meg_{parc}_features_parcels_window_v2.h5')
+    meg_data_subjects.to_hdf(feature_fname_subjects, key=f'meg_{parc}_features_subjects_window_v3', mode='w')
+    #meg_data_parcels.to_hdf(feature_fname_parcels, key=f'meg_{parc}_features_parcels_window_v2', mode='w')
 
 
 if __name__ == "__main__":
