@@ -2,6 +2,7 @@
 
 import os
 import sys
+import random
 import mne
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +21,26 @@ tbi_dir = '/scratch/nbe/tbi-meg/veera/processed'
 subjects_dir = '/scratch/work/italinv1/tbi/mri_recons'
 averages_output_dir = '/scratch/nbe/tbi-meg/veera/averages'
 
+type = 'absolute'
+random.seed(17)
+
+def get_subjects(group='tbi'):
+    all_subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()] + \
+                          [f.name for f in os.scandir(tbi_dir) if f.is_dir()])
+
+    if group == 'case':
+        subjects = [s for s in all_subjects if s not in controls]
+    elif group == 'control':
+        subjects = [s for s in all_subjects if s in controls]
+    elif group == 'tbi':
+        subjects = sorted([f.name for f in os.scandir(tbi_dir) if f.is_dir()])
+    elif group == 'camcan':
+        subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()])
+    else:
+        subjects = all_subjects
+
+    return subjects
+
 
 def get_fsaverage_fname(subj):
     if subj.startswith('sub-'):
@@ -29,7 +50,7 @@ def get_fsaverage_fname(subj):
         task = 'EC'
         psd_dir = os.path.join(tbi_dir, subj, 'psd')
 
-    fsaverage_fname = os.path.join(psd_dir, f'{subj}-{task}-psd-fsaverage')
+    fsaverage_fname = os.path.join(psd_dir, f'{subj}-{task}-full-psd-fsaverage')
 
     return fsaverage_fname
 
@@ -83,18 +104,8 @@ def get_avg_psd(subjs):
     return stc_avg, stc_var
 
 
-def get_cohorts(group='total'):
+def get_cohorts(subjects):
     cohorts = defaultdict(list)
-    all_subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()] + \
-                          [f.name for f in os.scandir(tbi_dir) if f.is_dir()])
-    if group == 'case':
-        subjects = [s for s in all_subjects if s in cases]
-    elif group == 'control':
-        subjects = [s for s in all_subjects if s in controls]
-    elif group == 'normative':
-        subjects = [s for s in all_subjects if s not in cases]
-    else:
-        subjects = all_subjects
 
     for subj in subjects:
         if subj.startswith('sub-CC'):
@@ -119,80 +130,76 @@ def get_cohorts(group='total'):
     return cohorts
 
 
-def get_cohort(cohorts, idx, group='total'):
+def get_cohort(cohorts, idx, group='tbi', random_cohorts=False):
     """Calculate averages by age group"""
     if idx < 1 or idx > 7:
         print('Please use index between 1 and 7')
         return
-    subjects = cohorts.get(idx, None)
-    if not subjects:
+    cohort_subjects = cohorts.get(idx, None)
+    if not cohort_subjects:
         print('No subjects in cohort', idx)
         return
 
-    stc_avg, stc_var = get_avg_psd(subjects)
-
     group_avg_outdir = os.path.join(averages_output_dir, group)
     fig_dir = os.path.join(group_avg_outdir, 'fig')
     os.makedirs(fig_dir, exist_ok=True)
 
-    plot_avg_psd(stc_avg, stc_var, os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-psd.png'))
-
-    stc_avg_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-avg-40hz')
-    stc_var_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-var-40hz')
-    stc_avg.save(stc_avg_fname)
-    stc_var.save(stc_var_fname)
-
-    visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-stc.png'), subjects_dir, 'fsaverage')
-
-
-def get_all(group='total'):
-    """Calculate average over whole dataset"""
-    all_subjects = sorted([f.name for f in os.scandir(camcan_dir) if f.is_dir()] + \
-                          [f.name for f in os.scandir(tbi_dir) if f.is_dir()])
-
-    if group == 'case':
-        subjects = [s for s in all_subjects if s not in controls]
-    elif group == 'control':
-        subjects = [s for s in all_subjects if s in controls]
-    elif group == 'normative':
-        subjects = [s for s in all_subjects if s in controls] + \
-                   sorted([f.name for f in os.scandir(other_data_dir) if f.is_dir() and
-                           (f.name in controls or f.name.startswith('sub-'))])
+    if random_cohorts:
+        n = len(cohort_subjects)
+        all_subjects = [s for sublist in cohorts.values() for s in sublist]
+        subjects = random.sample(all_subjects, n)
+        psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-psd.png')
+        stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-stc.png')
+        stc_avg_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-avg-random')
+        stc_var_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-var-random')
     else:
-        subjects = all_subjects
-    
+        subjects = cohort_subjects
+        psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-{type}-psd.png')
+        stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-{type}-stc.png')
+        stc_avg_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-avg-{type}')
+        stc_var_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-var-{type}')
+
+    stc_avg, stc_var = get_avg_psd(subjects)
+
+    plot_avg_psd(stc_avg, stc_var, psd_fig_fname)
+
+    stc_avg.save(stc_avg_fname)
+    stc_var.save(stc_var_fname)
+
+    visualize_stc(stc_avg_fname, stc_fig_fname, subjects_dir, 'fsaverage')
+
+
+def get_all(subjects, group='tbi'):
+    """Calculate average over whole dataset"""
     stc_avg, stc_var = get_avg_psd(subjects)
 
     group_avg_outdir = os.path.join(averages_output_dir, group)
     fig_dir = os.path.join(group_avg_outdir, 'fig')
     os.makedirs(fig_dir, exist_ok=True)
 
-    plot_avg_psd(stc_avg, stc_var, os.path.join(fig_dir, f'{group}-avg-psd.png'))
+    plot_avg_psd(stc_avg, stc_var, os.path.join(fig_dir, f'{group}-avg-{type}-psd.png'))
 
-    stc_avg_fname = os.path.join(group_avg_outdir, f'{group}-avg-40hz')
-    stc_var_fname = os.path.join(group_avg_outdir, f'{group}-var-40hz')
+    stc_avg_fname = os.path.join(group_avg_outdir, f'{group}-avg-{type}')
+    stc_var_fname = os.path.join(group_avg_outdir, f'{group}-var-{type}')
     stc_avg.save(stc_avg_fname)
     stc_var.save(stc_var_fname)
 
-    visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-stc.png'), subjects_dir, 'fsaverage')
+    visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-{type}-stc.png'), subjects_dir, 'fsaverage')
 
 
-def main(group='total'):
-    if not group or group not in ['total', 'case', 'control', 'normative']:
-        group = 'total'
+def main(group='tbi', random_cohorts=True):
+    if not group or group not in ['tbi', 'camcan', 'case', 'control']:
+        group = 'tbi'
     print('Group:', group)
 
-    cohorts = get_cohorts(group)
+    subjects = get_subjects(group)
+    cohorts = get_cohorts(subjects)
     print(cohorts)
     for i in range(1, 8):
         print('Starting cohort: ' + str(i))
-        get_cohort(cohorts, i, group)
+        get_cohort(cohorts, i, group, random_cohorts=random_cohorts)
 
-    if (group == 'normative') and not other_data_dir:
-        print("'other_data_dir' is required if group is 'normative'")
-        sys.exit(1)
-
-    get_all(group)
+    get_all(subjects, group)
 
     
 if __name__ == '__main__':

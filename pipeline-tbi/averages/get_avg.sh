@@ -11,7 +11,7 @@ GROUP=$1
 
 if  [ -z "$GROUP" ]
 then
-  GROUP=total
+  GROUP=camcan
 fi
 
 python /scratch/nbe/tbi-meg/veera/pipeline/averages/get_avg.py "${GROUP}"
