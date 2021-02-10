@@ -17,7 +17,7 @@ def run_ica_manual(subj, task, raw_fname, output_dir, fit=False, all_manual=Fals
     ica_fname = os.path.join(ica_dir, f'{subj}-{task}-ica.fif')
     if fit:
         # fit with more components
-        ica = fit_ica(raw.copy(), decim=3, n_components=0.97, reject=dict(mag=5e-12, grad=5000e-13))
+        ica = fit_ica(raw.copy(), decim=3, n_components=0.92, reject=dict(mag=5e-12, grad=5000e-13))
         ecg_inds, ecg_scores, eog_inds, eog_scores = get_excludes(ica, raw)
         ica.labels_['ecg'] = ecg_inds
         ica.labels_['eog'] = eog_inds

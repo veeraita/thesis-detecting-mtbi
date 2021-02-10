@@ -10,7 +10,7 @@ def main(subj, task, raw_fname, output_dir):
     ica_dir = os.path.join(output_dir, subj, 'ica')
     os.makedirs(ica_dir, exist_ok=True)
 
-    ica_fname = os.path.join(ica_dir, f'{subj}-{task}-ica.fif')
+    ica_fname = os.path.join(ica_dir, f'{subj}-rest-ica.fif')
     ica = read_ica(ica_fname)
 
     raw = mne.io.Raw(raw_fname)
