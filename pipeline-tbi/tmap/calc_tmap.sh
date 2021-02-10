@@ -2,7 +2,7 @@
 
 SUBJECTS_DIR=/scratch/work/italinv1/tbi/mri_recons
 OUTPUT_DIR=/scratch/nbe/tbi-meg/veera/processed
-AVERAGES_DIR=/scratch/nbe/tbi-meg/veera/averages/normative
+AVERAGES_DIR=/scratch/nbe/tbi-meg/veera/averages/camcan
 
 echo "SUBJECTS_DIR set as $SUBJECTS_DIR"
 echo "OUTPUT_DIR set as $OUTPUT_DIR"
