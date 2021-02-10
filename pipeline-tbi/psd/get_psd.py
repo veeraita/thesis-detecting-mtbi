@@ -70,7 +70,7 @@ def make_source_psd(raw_fname, stc_fname, fsaverage_fname, fsaverage_src_fname, 
     stc_fsaverage.save(fsaverage_fname)
 
 
-def process_subject(subj, subjects_dir, output_dir, tasks=['EC'], force_calculate=False):
+def process_subject(subj, subjects_dir, output_dir, tasks=['EC'], force_calculate=False, window=False):
     scr_dir = os.path.join(output_dir, subj, 'src')
     bem_dir = os.path.join(output_dir, subj, 'bem')
     inv_dir = os.path.join(output_dir, subj, 'inv')
@@ -93,9 +93,13 @@ def process_subject(subj, subjects_dir, output_dir, tasks=['EC'], force_calculat
     visualize_bem(os.path.join(fig_dir, f'{subj}-bem.png'), subjects_dir, subj, src)
 
     for task in tasks:
-        for i in range(40, 390, 50):
+        if window:
+            r = range(40, 390, 50)
+        else:
+            r = ['full']
+        for i in r:
             raw_fname = os.path.join(output_dir, subj, 'ica', f'{subj}-{task}-{i}-ica-recon.fif')
-            #raw_fname = f'/scratch/work/italinv1/tbi/meg/{subject}_{task}_tsss_mc.fif'
+            #raw_fname = os.path.join(output_dir, subj, 'ica', f'{subj}-{task}-ica-recon.fif')
             trans_fname = os.path.join(output_dir, subj, 'trans', f'{subj}-{task}-{i}-new-hs-AR-trans.fif')
             inv_fname = os.path.join(inv_dir, f'{subj}-{task}-{i}-inv.fif')
             stc_fname = os.path.join(psd_dir, f'{subj}-{task}-{i}-psd-dSPM')
@@ -115,4 +119,4 @@ if __name__ == "__main__":
         tasks = ['rest']
     else:
         tasks = ['EC']
-    process_subject(subject, subjects_dir, output_dir, tasks=tasks, force_calculate=True)
+    process_subject(subject, subjects_dir, output_dir, tasks=tasks, force_calculate=True, window=True)
