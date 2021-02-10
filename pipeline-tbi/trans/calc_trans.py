@@ -35,12 +35,18 @@ if __name__ == "__main__":
     subjects_dir = sys.argv[2]
     output_dir = sys.argv[3]
 
+    window = True
+
     if 'camcan' in subjects_dir:
         tasks = ['rest']
     else:
         tasks = ['EC']
 
     for task in tasks:
-        for i in range(40, 390, 50):
-            meg_file = os.path.join(output_dir, subject, 'ica', f'{subject}-{task}-{i}-ica-recon.fif')
-            calc_trans(subject, meg_file, subjects_dir, output_dir, task=task, i=str(i))
+        if window:
+            for i in range(40, 390, 50):
+               meg_file = os.path.join(output_dir, subject, 'ica', f'{subject}-{task}-{i}-ica-recon.fif')
+               calc_trans(subject, meg_file, subjects_dir, output_dir, task=task, i=str(i))
+        else:
+            meg_file = os.path.join(output_dir, subject, 'ica', f'{subject}-{task}-ica-recon.fif')
+            calc_trans(subject, meg_file, subjects_dir, output_dir, task=task)
