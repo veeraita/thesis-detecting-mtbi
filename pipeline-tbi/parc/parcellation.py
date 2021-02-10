@@ -35,23 +35,42 @@ def parcellate_stc(stc, labels, agg='mean'):
     return parc_data
 
 
-def main(subj, subjects_dir, data_dir, type='relative', tasks=['EC'], agg='mean'):
+def main(subj, subjects_dir, data_dir, type='absolute', ext='fsaverage', tasks=['EC'], agg='mean', cohorts=False,
+         window=False):
     psd_dir = os.path.join(data_dir, subj, 'psd')
+    tmap_dir = os.path.join(data_dir, subj, 'tmap')
+    if ext == 'tmap':
+        dir = tmap_dir
+    else:
+        dir = psd_dir
     for task in tasks:
-        for i in range(40, 390, 50):
-            if type == 'relative':
-                stc_fname = os.path.join(psd_dir, f'{subj}-{task}-{i}-relative-psd-fsaverage')
-            elif type == 'absolute':
-                stc_fname = os.path.join(psd_dir, f'{subj}-{task}-{i}-psd-fsaverage')
-            elif type == 'tmap':
-                tmap_dir = os.path.join(data_dir, subj, 'tmap')
-                stc_fname = os.path.join(tmap_dir, f'{subj}-{task}-psd-tmap')
-            else:
-                raise RuntimeError('"type" argument must be one of ("relative", "absolute", "tmap")')
+        if window:
+            for i in range(40, 390, 50):
+                if cohorts:
+                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-{type}-cohort-psd-{ext}')
+                else:
+                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-{type}-psd-{ext}')
+                stc = mne.read_source_estimate(stc_fname, 'fsaverage')
 
+                labels_dir = '/scratch/nbe/tbi-meg/veera/labels_aparc_sub'
+                os.makedirs(labels_dir, exist_ok=True)
+                labels = get_labels(subjects_dir, labels_dir)
+
+                parc_stc_data = parcellate_stc(stc, labels, agg)
+
+                outdir = os.path.join(os.path.dirname(data_dir), 'aparc_data')
+                os.makedirs(outdir, exist_ok=True)
+                outfile = os.path.join(outdir, os.path.basename(stc_fname) + f'-{agg}-aparc-data.csv')
+                print('Saving data to', outfile)
+                np.savetxt(outfile, parc_stc_data, fmt='%.7f', delimiter=",")
+        else:
+            if cohorts:
+                stc_fname = os.path.join(dir, f'{subj}-{task}-{type}-cohort-psd-{ext}')
+            else:
+                stc_fname = os.path.join(dir, f'{subj}-{task}-{type}-psd-{ext}')
             stc = mne.read_source_estimate(stc_fname, 'fsaverage')
 
-            labels_dir = '/scratch/nbe/tbi-meg/veera/labels'
+            labels_dir = '/scratch/nbe/tbi-meg/veera/labels_aparc_sub'
             os.makedirs(labels_dir, exist_ok=True)
             labels = get_labels(subjects_dir, labels_dir)
 
@@ -73,4 +92,4 @@ if __name__ == "__main__":
         tasks = ['rest']
     else:
         tasks = ['EC']
-    main(subject, subjects_dir, data_dir, type='relative', tasks=tasks, agg='mean')
+    main(subject, subjects_dir, data_dir, type='random', ext='tmap', tasks=tasks, agg='mean', cohorts=True, window=True)
