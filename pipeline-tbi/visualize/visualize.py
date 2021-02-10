@@ -44,19 +44,22 @@ def visualize_source_space(src_fname, fig_fname, subjects_dir, subject):
     plt.close()
 
 
-def visualize_stc(stc_fname, fig_fname, subjects_dir, subject, initial_time=10., colormap='auto', clim='auto', spacing='ico4', fsaverage=True):
+def visualize_stc(stc_fname, fig_fname, subjects_dir, subject, initial_time=10., colormap='auto', clim='auto',
+                  spacing='ico4', fsaverage=True):
     print('Visualizing source estimate...')
     stc_subject = 'fsaverage' if fsaverage else subject
     stc = mne.read_source_estimate(stc_fname, subject=stc_subject)
     plt.figure()
-    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=initial_time, hemi='lh', colormap=colormap, clim=clim, spacing=spacing)
+    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=initial_time, hemi='lh', colormap=colormap,
+             clim=clim, spacing=spacing)
     lh_fig_fname = fig_fname.replace('.png', '-lh.png')
     plt.savefig(lh_fig_fname)
     print('Saving figure (left hemisphere)...')
     plt.savefig(lh_fig_fname)
     print('Figure saved in', lh_fig_fname)
 
-    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=initial_time, hemi='rh', colormap=colormap, clim=clim, spacing=spacing)
+    stc.plot(subjects_dir=subjects_dir, backend='matplotlib', initial_time=initial_time, hemi='rh', colormap=colormap,
+             clim=clim, spacing=spacing)
     print('Saving figure (right hemisphere)...')
     rh_fig_fname = fig_fname.replace('.png', '-rh.png')
     plt.savefig(rh_fig_fname)
