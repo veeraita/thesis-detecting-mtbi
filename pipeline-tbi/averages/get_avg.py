@@ -21,7 +21,6 @@ tbi_dir = '/scratch/nbe/tbi-meg/veera/processed'
 subjects_dir = '/scratch/work/italinv1/tbi/mri_recons'
 averages_output_dir = '/scratch/nbe/tbi-meg/veera/averages'
 
-type = 'absolute'
 random.seed(17)
 
 def get_subjects(group='tbi'):
@@ -150,14 +149,14 @@ def get_cohort(cohorts, idx, group='tbi', random_cohorts=False):
         subjects = random.sample(all_subjects, n)
         psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-psd.png')
         stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-stc.png')
-        stc_avg_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-avg-random')
-        stc_var_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-var-random')
+        stc_avg_fname = os.path.join(group_avg_outdir, f'avg-cohort-{idx}-{group}-random')
+        stc_var_fname = os.path.join(group_avg_outdir, f'var-cohort-{idx}-{group}-random')
     else:
         subjects = cohort_subjects
-        psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-{type}-psd.png')
-        stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-{type}-stc.png')
-        stc_avg_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-avg-{type}')
-        stc_var_fname = os.path.join(group_avg_outdir, f'cohort-{idx}-{group}-var-{type}')
+        psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-psd.png')
+        stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-stc.png')
+        stc_avg_fname = os.path.join(group_avg_outdir, f'avg-cohort-{idx}-{group}')
+        stc_var_fname = os.path.join(group_avg_outdir, f'var-cohort-{idx}-{group}')
 
     stc_avg, stc_var = get_avg_psd(subjects)
 
@@ -177,17 +176,17 @@ def get_all(subjects, group='tbi'):
     fig_dir = os.path.join(group_avg_outdir, 'fig')
     os.makedirs(fig_dir, exist_ok=True)
 
-    plot_avg_psd(stc_avg, stc_var, os.path.join(fig_dir, f'{group}-avg-{type}-psd.png'))
+    plot_avg_psd(stc_avg, stc_var, os.path.join(fig_dir, f'{group}-avg-psd.png'))
 
-    stc_avg_fname = os.path.join(group_avg_outdir, f'{group}-avg-{type}')
-    stc_var_fname = os.path.join(group_avg_outdir, f'{group}-var-{type}')
+    stc_avg_fname = os.path.join(group_avg_outdir, f'avg-{group}')
+    stc_var_fname = os.path.join(group_avg_outdir, f'var-{group}')
     stc_avg.save(stc_avg_fname)
     stc_var.save(stc_var_fname)
 
-    visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-{type}-stc.png'), subjects_dir, 'fsaverage')
+    visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-stc.png'), subjects_dir, 'fsaverage')
 
 
-def main(group='tbi', random_cohorts=True):
+def main(group='tbi', random_cohorts=False):
     if not group or group not in ['tbi', 'camcan', 'case', 'control']:
         group = 'tbi'
     print('Group:', group)

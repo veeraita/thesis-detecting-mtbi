@@ -35,7 +35,7 @@ def parcellate_stc(stc, labels, agg='mean'):
     return parc_data
 
 
-def main(subj, subjects_dir, data_dir, type='absolute', ext='fsaverage', tasks=['EC'], agg='mean', cohorts=False,
+def main(subj, subjects_dir, data_dir, ext='fsaverage', tasks=['EC'], agg='mean', cohorts=None,
          window=False):
     psd_dir = os.path.join(data_dir, subj, 'psd')
     tmap_dir = os.path.join(data_dir, subj, 'tmap')
@@ -46,10 +46,10 @@ def main(subj, subjects_dir, data_dir, type='absolute', ext='fsaverage', tasks=[
     for task in tasks:
         if window:
             for i in range(40, 390, 50):
-                if cohorts:
-                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-{type}-cohort-psd-{ext}')
+                if cohorts is not None:
+                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-{cohorts}-psd-{ext}')
                 else:
-                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-{type}-psd-{ext}')
+                    stc_fname = os.path.join(dir, f'{subj}-{task}-{i}-psd-{ext}')
                 stc = mne.read_source_estimate(stc_fname, 'fsaverage')
 
                 labels_dir = '/scratch/nbe/tbi-meg/veera/labels_aparc_sub'
@@ -64,10 +64,10 @@ def main(subj, subjects_dir, data_dir, type='absolute', ext='fsaverage', tasks=[
                 print('Saving data to', outfile)
                 np.savetxt(outfile, parc_stc_data, fmt='%.7f', delimiter=",")
         else:
-            if cohorts:
-                stc_fname = os.path.join(dir, f'{subj}-{task}-{type}-cohort-psd-{ext}')
+            if cohorts is not None:
+                stc_fname = os.path.join(dir, f'{subj}-{task}-{cohorts}-psd-{ext}')
             else:
-                stc_fname = os.path.join(dir, f'{subj}-{task}-{type}-psd-{ext}')
+                stc_fname = os.path.join(dir, f'{subj}-{task}-psd-{ext}')
             stc = mne.read_source_estimate(stc_fname, 'fsaverage')
 
             labels_dir = '/scratch/nbe/tbi-meg/veera/labels_aparc_sub'
@@ -92,4 +92,4 @@ if __name__ == "__main__":
         tasks = ['rest']
     else:
         tasks = ['EC']
-    main(subject, subjects_dir, data_dir, type='random', ext='tmap', tasks=tasks, agg='mean', cohorts=True, window=True)
+    main(subject, subjects_dir, data_dir, ext='tmap', tasks=tasks, agg='mean', cohorts='age', window=True)
