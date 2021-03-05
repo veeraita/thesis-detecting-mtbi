@@ -8,29 +8,37 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.decomposition import PCA
 
-from preprocessing import get_tmap_dataset, features_from_df, preprocess, feature_selection, FeatureSelector
+from preprocessing import get_tmap_dataset, features_from_df, preprocess, FeatureSelector
 from inspection import *
-from cross_validate import run_cv, run_cv_pca, run_grid, performance, prediction_per_subject, custom_cv
+from cross_validate import run_cv, run_grid, performance, prediction_per_subject, custom_cv
 
-TYPE = 'random'
+# define file paths
 DATA_DIR = '/scratch/nbe/tbi-meg/veera/tmap-data/'
-DATA_FILENAME = f'tmap_data_aparc_sub_f8_{TYPE}.csv'
-SUBJECTS_DATA_FPATH = 'subject_demographics.csv'
+FULL_NORMATIVE_FILENAME = 'tmap_data_aparc_sub_f8_absolute.csv'
+AGE_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_absolute_cohort.csv'
+RANDOM_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_random_cohort.csv'
+# SUBJECTS_DATA_FPATH = 'subject_demographics.csv'
+
+# define random seed for reproducibility
 RANDOM_SEED = 50
+# number of cross-validation splits
 CV = 7
+# fraction of data used for testing, if nested CV is not used
 TEST_SPLIT = 0.1
 
+# threshold for hierarchical clustering
 CLUSTER_THRESH = 2
+# number of features to select by mutual information criterion after the clustering,
+# use 'all' to skip feature selection by mutual information
 N_FEATURES = 'all'
-N_PCA_COMP = 4
+# number of permutations in calculating permutation feature importance
 N_PERM_REPEATS = 7
-LINEAR_FS = False
-CONFOUNDS = False
 
+# the ids of the subjects labelled as positive
 cases = ['%03d' % n for n in range(1, 28)]
 
+# definition of the frequency bands
 freq_bands = {
     'delta': (1, 4),
     'theta': (4, 8),
@@ -47,32 +55,38 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-f', '--fit-params', help='Parameters to pass to the classifier (JSON string)',
                         type=json.loads, default='{}')
-    parser.add_argument('--pca', help='Use PCA before fitting the model', action='store_true', default=False)
     parser.add_argument('-g', '--grid', help='Use grid search for model selection',
                         action='store_true', default=False)
     parser.add_argument('-r', '--repeat', help='Use repeated cross-validation', action='store_true', default=False)
     parser.add_argument('-n', '--nested', help='Use nested cross-validation for model selection and validation',
                         action='store_true', default=False)
     parser.add_argument('--fs', help='Apply feature selection', action='store_true', default=False)
-    parser.add_argument('-c', '--cohorts', help='Use cohort-matched data', action='store_true', default=False)
+    parser.add_argument('--norm-data', help='Select what normative data to use', choices=['full', 'age', 'random'],
+                        default='full')
     parser.add_argument('-v', '--visualize', help='Visualize the results', action='store_true', default=False)
+    parser.add_argument('-p', '--perm-test', help='Use permutation test', action='store_true', default=False)
 
     args = parser.parse_args()
 
-    data_fpath = os.path.join(DATA_DIR, DATA_FILENAME)
+    # select data file based on the selected normative data
+    if args.norm_data == 'full':
+        data_fpath = os.path.join(DATA_DIR, FULL_NORMATIVE_FILENAME)
+    elif args.norm_data == 'age':
+        data_fpath = os.path.join(DATA_DIR, AGE_COHORT_FILENAME)
+    elif args.norm_data == 'random':
+        data_fpath = os.path.join(DATA_DIR, RANDOM_COHORT_FILENAME)
 
-    ext = ''
-    if args.cohorts:
-        data_fpath = data_fpath.replace('.csv', '_cohort.csv')
-        ext = '_cohort'
     print('Fetching data from file', data_fpath)
-    X_df, y, names = get_tmap_dataset(data_fpath, cases, freq_bands, SUBJECTS_DATA_FPATH)
+    # get the data matrix and class label of each sample (7 per subject)
+    X_df, y = get_tmap_dataset(data_fpath, cases, freq_bands)
 
     subjects = list(dict.fromkeys([s.split('_')[0] for s in X_df.index]))
-    subs_y = np.asarray([1 if s[:3] in cases else 0 for s in list(subjects)])
+    # get the class label of each subject
+    subs_y = np.asarray([1 if s[:3] in cases else 0 for s in subjects])
     subjects = np.asarray(subjects)
 
     if not args.nested:
+        # if not using nested cross-validation, split the data into train and test sets
         subjects_train, subjects_test = train_test_split(subjects, test_size=TEST_SPLIT, random_state=RANDOM_SEED,
                                                          stratify=subs_y)
         subs_y_train = np.asarray([1 if s[:3] in cases else 0 for s in list(subjects_train)])
@@ -84,70 +98,72 @@ def main():
         X_test_df = X_df[test_idx]
         y_test = y[test_idx]
     else:
+        # use the whole dataset in nested cross-validation
         X_train_df = X_df
         y_train = y
+        subs_y_train = subs_y
         X_test_df = None
 
-    X_train, _, feature_names = features_from_df(X_train_df)
+    # convert the pandas data frame to a numpy array
+    X_train, feature_names = features_from_df(X_train_df)
 
     fit_params = args.fit_params
-    classifier = SVC(random_state=RANDOM_SEED, class_weight='balanced', max_iter=-1, cache_size=1000, **fit_params)
-    importances, coefs, pca, search_space = None, None, None, None
+    classifier = SVC(random_state=RANDOM_SEED, kernel='rbf', class_weight='balanced', max_iter=-1, cache_size=1000, **fit_params)
+    importances, coefs, search_space = None, None, None
 
-    if args.pca:
-        if args.grid or args.nested:
-            search_space = [
-                {'svc__gamma': [1e-2, 1e-3, 1e-4],
-                 'svc__C': [1, 5, 10],
-                 'pca__n_components': [3, 5, 7, 9]}
-            ]
-        pca = PCA(N_PCA_COMP)
-        pipeline, accuracy, precision, recall, specif, f1, roc_auc, results_df = run_cv_pca(classifier, pca, X_train_df,
-                                                                                            y_train, cases,
-                                                                                            param_grid=search_space,
-                                                                                            n_splits=CV,
-                                                                                            nested=args.nested,
-                                                                                            rep_cv=args.repeat,
-                                                                                            random_state=RANDOM_SEED)
+    if args.grid or args.nested:
+        # search space for the model hyperparameters
+        search_space = [
+            {'svc__gamma': [1e-1, 1e-2, 1e-3],
+             'svc__C': [1, 5, 10]}
+        ]
+    if args.fs:
+        # the feature selection step to be added to Scikit-learn pipeline
+        selector = FeatureSelector(clf=classifier, k=N_FEATURES, thresh=CLUSTER_THRESH)
     else:
-        if args.grid or args.nested:
-            search_space = [
-                {'svc__gamma': [1e-1, 1e-2, 1e-3],
-                 'svc__C': [1, 5, 10]}
-            ]
-        if args.fs:
-            selector = FeatureSelector(clf=classifier, k=N_FEATURES, thresh=CLUSTER_THRESH, linear=LINEAR_FS, step=5)
-        else:
-            selector = 'passthrough'
-        pipeline, accuracy, precision, recall, specif, f1, roc_auc, importances, results_df = run_cv(classifier,
-                                                                                                     X_train_df,
-                                                                                                     y_train, cases,
-                                                                                                     selector=selector,
-                                                                                                     n_splits=CV,
-                                                                                                     nested=args.nested,
-                                                                                                     rep_cv=args.repeat,
-                                                                                                     param_grid=search_space,
-                                                                                                     random_state=RANDOM_SEED)
-    if args.cohorts:
-        results_fname = 'reports/subject_correct_predictions_cohorts.csv'
-    else:
-        results_fname = 'reports/subject_correct_predictions.csv'
+        # in Scikit-learn, a 'passthrough' pipeline step does nothing
+        selector = 'passthrough'
+
+    if args.perm_test:
+        # test the statistical significance by a permutation test
+        print('Starting permutation test')
+        n = 100 # number of permutations
+        null_dist = np.zeros(n)
+        for i in range(n):
+            print(f'{i + 1}/{n}')
+            subs_y_perm = np.random.permutation(subs_y_train)
+            y_perm = np.repeat(subs_y_perm, 7)
+            pipeline, results_dict, _, _ = run_cv(classifier, X_train_df, y_perm, subs_y_perm, selector=selector,
+                                                  n_splits=CV, nested=args.nested, rep_cv=args.repeat,
+                                                  param_grid=search_space, random_state=RANDOM_SEED)
+            null_dist[i] = np.nanmean(results_dict['accuracy'])
+        print(np.quantile(null_dist, 0.95))
+        return
+
+    # run cross-validation
+    pipeline, results_dict, importances, results_df = run_cv(classifier, X_train_df, y_train, subs_y_train,
+                                                             selector=selector, n_splits=CV, nested=args.nested,
+                                                             rep_cv=args.repeat, param_grid=search_space,
+                                                             random_state=RANDOM_SEED)
+
+    # save average classification performance and decision function values per subject
+    results_fname = f'reports/subject_correct_predictions_{args.norm_data}.csv'
     if args.fs:
         results_fname = results_fname.replace('.csv', '_fs.csv')
     results_df.to_csv(results_fname)
 
     print('--- Total cross-validation performance ---')
-    print('Accuracy: %.3f, STD %.2f' % (np.nanmean(accuracy), np.nanstd(accuracy)))
-    print('Precision: %.3f, STD %.2f' % (np.nanmean(precision), np.nanstd(precision)))
-    print('Recall: %.3f, STD %.2f' % (np.nanmean(recall), np.nanstd(recall)))
-    print('Specificity: %.3f, STD %.2f' % (np.nanmean(specif), np.nanstd(specif)))
-    print('F1 score: %.3f, STD %.2f' % (np.nanmean(f1), np.nanstd(f1)))
-    print('ROC AUC: %.3f, STD %.2f' % (np.nanmean(roc_auc), np.nanstd(roc_auc)))
+    print('Accuracy: %.3f, STD %.2f' % (np.nanmean(results_dict['accuracy']), np.nanstd(results_dict['accuracy'])))
+    print('Recall: %.3f, STD %.2f' % (np.nanmean(results_dict['recall']), np.nanstd(results_dict['recall'])))
+    print('Specificity: %.3f, STD %.2f' % (np.nanmean(results_dict['specif']), np.nanstd(results_dict['specif'])))
+    print('F1 score: %.3f, STD %.2f' % (np.nanmean(results_dict['f1']), np.nanstd(results_dict['f1'])))
+    print('ROC AUC: %.3f, STD %.2f' % (np.nanmean(results_dict['roc_auc']), np.nanstd(results_dict['roc_auc'])))
 
     pipeline.fit(X_train, y_train)
     if X_test_df is not None:
-        X_test, _, _ = features_from_df(X_test_df)
-        # X_train, y_train, X_test, y_test = preprocess(X_train, y_train, X_test, y_test)
+        # test using an independent test set
+        X_test, _ = features_from_df(X_test_df)
+        X_train, y_train, X_test, y_test = preprocess(X_train, y_train, X_test, y_test)
         y_pred = pipeline.predict(X_test)
         try:
             y_scores = pipeline.decision_function(X_test)
@@ -164,7 +180,6 @@ def main():
 
         print('--- Testing performance ---')
         print('Accuracy: %.2f' % val_accuracy)
-        print('Precision: %.2f' % val_precision)
         print('Recall: %.2f' % val_recall)
         print('Specificity: %.2f' % val_specif)
         print('F1 score: %.2f' % val_f1)
@@ -172,27 +187,17 @@ def main():
     else:
         X = X_train
 
-    if not isinstance(pipeline[0], str):
-        X_trans = pipeline[0].transform(X)
-    else:
-        X_trans = X
-
     if args.visualize:
-        corr_fig_fpath = f'fig/tmap_{TYPE}_corr{ext}.png'
-        separation_fig_fpath = f'fig/tmap_{TYPE}_class_separation{ext}.png'
-        importance_fig_fpath = f'fig/tmap_{TYPE}_feature_importance{ext}.png'
-        importance_txt_fpath = f'reports/tmap_{TYPE}_feature_importance{ext}.txt'
-        pca_var_fig_fpath = f'fig/tmap_{TYPE}_pca_variance{ext}.png'
-        pca_loadings_fig_fpath = f'fig/tmap_{TYPE}_pca_loadings{ext}.png'
-        pca_loadings_fpath = f'reports/tmap_{TYPE}_pca_loadings{ext}.csv'
-        pdp_fpath = f'fig/tmap_{TYPE}_partial_dependence{ext}.png'
-        pdp_pca_fpath = f'fig/tmap_{TYPE}_pca_partial_dependence{ext}.png'
+        # define figure file paths
+        corr_fig_fpath = f'fig/tmap_corr_{args.norm_data}.png'
+        separation_fig_fpath = f'fig/tmap_class_separation_{args.norm_data}.png'
+        importance_fig_fpath = f'fig/tmap_feature_importance_{args.norm_data}.png'
+        importance_txt_fpath = f'reports/tmap_feature_importance_{args.norm_data}.txt'
+        pdp_fpath = f'fig/tmap_partial_dependence_{args.norm_data}.png'
 
         print('Visualizing...')
 
         plot_correlation(X_train, feature_names, corr_fig_fpath)
-        if args.pca:
-            plot_pca_variance(X_train, pca_var_fig_fpath)
 
         if not args.nested:
             plot_class_separation(pipeline, X_train, X_test, y_train, y_test, separation_fig_fpath)
@@ -205,12 +210,6 @@ def main():
             else:
                 estimator = pipeline[1]
             plot_pdp(estimator, X, y, perm_sorted_idx, pdp_fpath, n_cols=3, feature_names=feature_names)
-        if args.pca:
-            save_pca_loadings(pipeline.named_steps['pca'], X_trans[2::7, :4], subs_y, feature_names,
-                              pca_loadings_fig_fpath,
-                              pca_loadings_fpath)
-            plot_pdp(pipeline, X[2::7], subs_y, [0, 1, 2, 3], pdp_pca_fpath, figsize=(10, 4), n_cols=4,
-                     feature_names=[f'PCA comp. {i + 1}' for i in range(4)])
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from scipy.stats import spearmanr
 from sklearn.decomposition import PCA
 from matplotlib import rc
 
+# styling
 plt.style.use('seaborn-colorblind')
 plt.rcParams.update({'font.size': 12})
 plt.rcParams.update({'font.size': 12})
@@ -19,7 +20,8 @@ blue = '#377eb8'
 
 
 def parse_label(label):
-    insert_space_words = [
+    """Make the feature names look more presentable"""
+    insert_space_words = [ # words to insert a space after
         'anterior',
         'caudal',
         'frontal',
@@ -64,6 +66,7 @@ def save_feature_importance(importances, feature_names, fig_fpath, output_fpath)
     fig.tight_layout()
     plt.savefig(fig_fpath)
 
+    # save importances also in text format
     with open(output_fpath, 'w') as f:
         for i in importances_mean.argsort()[::-1]:
             f.write(f"{feature_names[i]}\t"
@@ -74,17 +77,12 @@ def save_feature_importance(importances, feature_names, fig_fpath, output_fpath)
 def plot_correlation(X, feature_names, fig_fpath):
     print('Visualizing correlation')
     fig = plt.figure(figsize=(10, 10))
-    # host = HostAxes(fig)
-    # ax2 = ParasiteAxes(host, sharey=host)
-    # host.parasites.append(ax2)
     ax = SubplotHost(fig, 111)
     fig.add_subplot(ax)
-    # fig, ax = plt.subplots(figsize=(20, 20))
 
     corr = spearmanr(X).correlation
     im = ax.imshow(corr, cmap='bwr')
     cb = plt.colorbar(im, fraction=0.046, pad=0.04)
-    #cb.ax.tick_params(labelsize=40)
     ax.set_xticks([])
     ax.set_yticks([])
     labels = [x.split('-')[0] for x in feature_names if 'paracentral_1-lh' in x]
@@ -118,19 +116,6 @@ def plot_correlation(X, feature_names, fig_fpath):
     plt.savefig(fig_fpath)
     return corr
 
-def plot_linear_coefs(coefs, feature_names, fig_fpath):
-    plt.tight_layout()
-    coefs_df = pd.DataFrame(coefs, columns=['Coefficients'], index=feature_names)
-    top = coefs_df.reindex(coefs_df.Coefficients.abs().sort_values(ascending=True).index).tail(40)
-    ax = top.plot(kind='barh', figsize=(10, 12))
-    fig = ax.get_figure()
-    fig.savefig(fig_fpath, bbox_inches='tight')
-
-
-def save_linear_coefs(coefs, feature_names, fpath):
-    coefs_df = pd.DataFrame(coefs, columns=['Coefficients'], index=feature_names)
-    coefs_df.to_csv(fpath)
-
 
 def plot_class_separation(clf, X_train, X_test, y_train, y_test, fig_fpath):
     print('Visualizing class separation')
@@ -161,69 +146,3 @@ def plot_pdp(clf, X, y, features, fig_fpath, figsize=(10, 10), n_cols=2, feature
     disp.figure_.subplots_adjust(wspace=0.4, hspace=0.4)
     fig.tight_layout()
     fig.savefig(fig_fpath)
-
-
-def plot_pca_variance(X, fig_fpath):
-    print('Visualizing PCA variance')
-    pca = PCA(n_components=20)
-    pca.fit(X)
-    fig, ax = plt.subplots(figsize=(10, 8))
-    print(np.cumsum(pca.explained_variance_ratio_))
-    ax.plot(np.cumsum(pca.explained_variance_ratio_), color=red)
-    ax.set_xticks(np.arange(0, 20, 2))
-    ax.set_xlabel('Number of PCA components')
-    ax.set_ylabel('Fraction of explained variance')
-    fig.savefig(fig_fpath)
-
-
-def save_pca_loadings(pca, X, y, feature_names, fig_fpath, loadings_fpath):
-    print('Visualizing PCA loadings')
-    loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
-    loadings_s = pd.DataFrame(loadings, index=feature_names)
-
-    df = pd.DataFrame(loadings_s)
-    df.to_csv(loadings_fpath, float_format='%.3f')
-
-    X_df = pd.DataFrame(X, columns=[f'Component {i+1}' for i in range(X.shape[1])])
-    X_df['Label'] = ['patient' if label == 1 else 'control' for label in y]
-
-    ax = sns.pairplot(X_df, hue='Label', palette='Set1')
-    plt.setp(ax.legend.get_texts(), fontsize='12')
-    plt.setp(ax.legend.get_title(), fontsize='12')
-    ax.savefig(fig_fpath)
-    plt.close()
-
-
-def plot_learning_curves(train_losses, val_losses, f1_scores=None, accuracies=None, fig_fpath=None):
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-    ax = axes[0]
-    ax.plot(np.transpose(train_losses), color='orange', alpha=0.4)
-    ax.plot(np.mean(train_losses, axis=0), color='orange', linewidth=4, label='Train loss')
-    ax.plot(np.transpose(val_losses), color='red', alpha=0.4)
-    ax.plot(np.mean(val_losses, axis=0), color='red', linewidth=4, label='Validation loss')
-    ax.set_xlabel('Epochs')
-    ax.set_ylabel('Loss')
-    ax.legend()
-
-    if f1_scores is not None:
-        ax = axes[1]
-        ax.plot(np.transpose(f1_scores), color='blue', alpha=0.5)
-        ax.plot(np.mean(f1_scores, axis=0), color='blue', linewidth=4, label='F1 score')
-        if accuracies is not None:
-            ax.plot(np.transpose(accuracies), color='green', alpha=0.5)
-            ax.plot(np.mean(accuracies, axis=0), color='green', linewidth=4, label='Accuracy')
-        ax.set_xlabel('Epochs')
-        ax.set_ylabel('Score')
-        ax.legend()
-
-    plt.savefig(fig_fpath)
-
-
-def plot_loss_dist(losses, fig_fpath, threshold=None):
-    plt.figure()
-    # sns.displot(loss_dist, bins=100, kde=True, color='blue', height=5, aspect=2)
-    plt.hist(losses, bins=100)
-    if threshold is not None:
-        plt.axvline(threshold, 0.0, 10, color='r')
-    plt.title('Loss distribution')
-    plt.savefig('fig/loss_dist.png')
