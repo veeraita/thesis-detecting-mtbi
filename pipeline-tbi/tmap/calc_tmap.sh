@@ -16,13 +16,15 @@ cd $SUBJECTS_DIR || exit 1
 
 dirnames=(*/)
 
+COHORTS=random
+TASK=EC
+
 for d in "${dirnames[@]}"
 do
   sub=${d%?}
-  task=EC
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    python /scratch/nbe/tbi-meg/veera/pipeline/tmap/calc_tmap.py $sub $task $OUTPUT_DIR $SUBJECTS_DIR $AVERAGES_DIR
+    python /scratch/nbe/tbi-meg/veera/pipeline/tmap/calc_tmap.py $sub $TASK $OUTPUT_DIR $SUBJECTS_DIR $AVERAGES_DIR $COHORTS
   fi
 done

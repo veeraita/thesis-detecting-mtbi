@@ -80,5 +80,15 @@ def main(subject, task, data_dir, subjects_dir, averages_dir, cohorts='age', win
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    subject = sys.argv[1]
+    task = sys.argv[2]
+    data_dir = sys.argv[3]
+    subjects_dir = sys.argv[4]
+    averages_dir = sys.argv[5]
+    if len(sys.argv) > 6:
+        cohorts = sys.argv[6]
+    else:
+        cohorts = None
+
+    main(subject, task, data_dir, subjects_dir, averages_dir, cohorts=cohorts, window=True)
 
