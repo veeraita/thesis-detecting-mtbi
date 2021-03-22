@@ -9,15 +9,15 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from preprocessing import get_tmap_dataset, features_from_df, preprocess, FeatureSelector
+from preprocessing import get_zmap_dataset, features_from_df, preprocess, FeatureSelector
 from inspection import *
 from cross_validate import run_cv, run_grid, performance, prediction_per_subject, custom_cv
 
 # define file paths
-DATA_DIR = '/scratch/nbe/tbi-meg/veera/tmap-data/'
-FULL_NORMATIVE_FILENAME = 'tmap_data_aparc_sub_f8.csv'
-AGE_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_age.csv'
-RANDOM_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_random.csv'
+DATA_DIR = '/scratch/nbe/tbi-meg/veera/zmap-data/'
+FULL_NORMATIVE_FILENAME = 'zmap_data_aparc_sub_f8.csv'
+AGE_COHORT_FILENAME = 'zmap_data_aparc_sub_f8_age.csv'
+RANDOM_COHORT_FILENAME = 'zmap_data_aparc_sub_f8_random.csv'
 # SUBJECTS_DATA_FPATH = 'subject_demographics.csv'
 
 # define random seed for reproducibility
@@ -78,7 +78,7 @@ def main():
 
     print('Fetching data from file', data_fpath)
     # get the data matrix and class label of each sample (7 per subject)
-    X_df, y = get_tmap_dataset(data_fpath, cases, freq_bands)
+    X_df, y = get_zmap_dataset(data_fpath, cases, freq_bands)
 
     subjects = list(dict.fromkeys([s.split('_')[0] for s in X_df.index]))
     # get the class label of each subject
@@ -189,11 +189,11 @@ def main():
 
     if args.visualize:
         # define figure file paths
-        corr_fig_fpath = f'fig/tmap_corr_{args.norm_data}.png'
-        separation_fig_fpath = f'fig/tmap_class_separation_{args.norm_data}.png'
-        importance_fig_fpath = f'fig/tmap_feature_importance_{args.norm_data}.png'
-        importance_txt_fpath = f'reports/tmap_feature_importance_{args.norm_data}.txt'
-        pdp_fpath = f'fig/tmap_partial_dependence_{args.norm_data}.png'
+        corr_fig_fpath = f'fig/zmap_corr_{args.norm_data}.png'
+        separation_fig_fpath = f'fig/zmap_class_separation_{args.norm_data}.png'
+        importance_fig_fpath = f'fig/zmap_feature_importance_{args.norm_data}.png'
+        importance_txt_fpath = f'reports/zmap_feature_importance_{args.norm_data}.txt'
+        pdp_fpath = f'fig/zmap_partial_dependence_{args.norm_data}.png'
 
         print('Visualizing...')
 

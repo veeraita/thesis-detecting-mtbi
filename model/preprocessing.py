@@ -12,7 +12,7 @@ from sklearn.feature_selection import SelectKBest, mutual_info_classif, Selector
 pd.set_option('use_inf_as_na', True)
 
 
-def get_tmap_dataset(fpath, cases, freq_bands):
+def get_zmap_dataset(fpath, cases, freq_bands):
     dataset = pd.read_csv(fpath, header=None, index_col=0)
     data = dataset.values
     # bin the data into frequency bands

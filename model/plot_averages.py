@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-DATA_DIR = '/scratch/nbe/tbi-meg/veera/tmap-data/'
-DATA_FILENAME = f'tmap_data_aparc_sub_f8_absolute.csv'
+DATA_DIR = '/scratch/nbe/tbi-meg/veera/zmap-data/'
+DATA_FILENAME = f'zmap_data_aparc_sub_f8_absolute.csv'
 FPATH = os.path.join(DATA_DIR, DATA_FILENAME)
 RESULTS_FPATH = 'reports/subject_correct_predictions.csv'
 CASES = ['%03d' % n for n in range(1, 28)]
@@ -20,7 +20,7 @@ def create_data_matrix(df, names):
     return data
 
 
-def plot_heatmaps(data_mats, titles, fpath, nrows=1, ncols=1, figsize=(12, 6), colormap='RdBu_r'):
+def plot_heazmaps(data_mats, titles, fpath, nrows=1, ncols=1, figsize=(12, 6), colormap='RdBu_r'):
     fig = plt.figure(figsize=figsize)
 
     for i, (data, title) in enumerate(zip(data_mats, titles)):
@@ -71,7 +71,7 @@ def main():
     control_avg = np.mean(control_data, axis=0)
 
     print('Plotting patient/control averages')
-    plot_heatmaps([cases_avg, control_avg], ['Patients ($n=25$)', 'Controls ($n=20$)'], 'fig/heatmap_groups.png',
+    plot_heazmaps([cases_avg, control_avg], ['Patients ($n=25$)', 'Controls ($n=20$)'], 'fig/heazmap_groups.png',
                   ncols=2)
 
     case_data_correct = create_data_matrix(dataset, case_names_correct)
@@ -81,9 +81,9 @@ def main():
     cases_diff = cases_correct_avg - cases_incorrect_avg
 
     # print('Plotting cases')
-    # plot_heatmaps([cases_correct_avg, cases_incorrect_avg, cases_diff],
+    # plot_heazmaps([cases_correct_avg, cases_incorrect_avg, cases_diff],
     #               ['Correctly classified patients', 'Incorrectly classified patients', 'Difference (correct - incorrect)'],
-    #               'fig/heatmap_cases.png', ncols=3, figsize=(16, 6))
+    #               'fig/heazmap_cases.png', ncols=3, figsize=(16, 6))
 
     control_data_correct = create_data_matrix(dataset, control_names_correct)
     control_data_incorrect = create_data_matrix(dataset, control_names_incorrect)
@@ -92,19 +92,19 @@ def main():
     controls_diff = controls_correct_avg - controls_incorrect_avg
 
     # print('Plotting controls')
-    # plot_heatmaps([controls_correct_avg, controls_incorrect_avg, controls_diff],
+    # plot_heazmaps([controls_correct_avg, controls_incorrect_avg, controls_diff],
     #               ['Correctly classified controls', 'Incorrectly classified controls', 'Difference (correct - incorrect)'],
-    #               'fig/heatmap_controls.png', ncols=3, figsize=(16, 6))
+    #               'fig/heazmap_controls.png', ncols=3, figsize=(16, 6))
 
     print('Plotting averages by classification result')
-    plot_heatmaps([cases_correct_avg, cases_incorrect_avg, cases_diff, controls_correct_avg, controls_incorrect_avg, controls_diff],
+    plot_heazmaps([cases_correct_avg, cases_incorrect_avg, cases_diff, controls_correct_avg, controls_incorrect_avg, controls_diff],
                   [f'Correctly classified patients ($n={n_case_correct}$)',
                    f'Incorrectly classified patients ($n={n_case_incorrect}$)',
                    'Difference (correct - incorrect)',
                    f'Correctly classified controls ($n={n_control_correct}$)',
                    f'Incorrectly classified controls ($n={n_control_incorrect}$)',
                    'Difference (correct - incorrect)'],
-                  'fig/heatmap_results.png', nrows=2, ncols=3, figsize=(16, 10))
+                  'fig/heazmap_results.png', nrows=2, ncols=3, figsize=(16, 10))
 
 
 if __name__ == "__main__":

@@ -25,6 +25,6 @@ do
   if [ -n "$sub" ]
   then
     echo "${sub}"
-    python /scratch/nbe/tbi-meg/veera/pipeline/tmap/calc_tmap.py $sub $TASK $OUTPUT_DIR $SUBJECTS_DIR $AVERAGES_DIR $COHORTS
+    python /scratch/nbe/tbi-meg/veera/pipeline/zmap/calc_zmap.py $sub $TASK $OUTPUT_DIR $SUBJECTS_DIR $AVERAGES_DIR $COHORTS
   fi
 done

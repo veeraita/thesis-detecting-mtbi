@@ -7,7 +7,7 @@ import numpy as np
 
 
 data_dir = '/scratch/nbe/tbi-meg/veera/processed'
-outdir = '/scratch/nbe/tbi-meg/veera/tmap-data'
+outdir = '/scratch/nbe/tbi-meg/veera/zmap-data'
 decim_freqs = 8
 parc = 'aparc_sub'
 labels_dir = f'/scratch/nbe/tbi-meg/veera/labels_{parc}'
@@ -19,9 +19,9 @@ def main(cohorts=None, window=True):
                      and not l.name.startswith('unknown')])
 
     if parc is None:
-        outfile = os.path.join(outdir, f'tmap_data_f{decim_freqs}.csv')
+        outfile = os.path.join(outdir, f'zmap_data_f{decim_freqs}.csv')
     else:
-        outfile = os.path.join(outdir, f'tmap_data_{parc}_f{decim_freqs}.csv')
+        outfile = os.path.join(outdir, f'zmap_data_{parc}_f{decim_freqs}.csv')
     if cohorts is not None:
         outfile = outfile.replace('.csv', f'_{cohorts}.csv')
     if 'restmeg' in data_dir:
@@ -36,21 +36,21 @@ def main(cohorts=None, window=True):
         os.remove(outfile)
 
     for subject in subjects:
-        tmap_dir = os.path.join(data_dir, subject, 'tmap')
+        zmap_dir = os.path.join(data_dir, subject, 'zmap')
         aparc_dir = os.path.join(data_dir, subject, 'parc')
         if window:
             for i in range(40, 390, 50):
                 if parc is None:
-                    tmap_file = os.path.join(tmap_dir, f'{subject}-{task}-{i}-psd-tmap-data.csv')
+                    zmap_file = os.path.join(zmap_dir, f'{subject}-{task}-{i}-psd-zmap-data.csv')
                     index = None
                 else:
-                    tmap_file = os.path.join(aparc_dir, f'{subject}-{task}-{i}-psd-tmap-mean-aparc-data.csv')
+                    zmap_file = os.path.join(aparc_dir, f'{subject}-{task}-{i}-psd-zmap-mean-aparc-data.csv')
                     index = [f'{subject}_{i}-{label}' for label in labels]
                 if cohorts is not None:
-                    tmap_file = tmap_file.replace(str(i), str(i) + f'-{cohorts}')
-                print(tmap_file)
+                    zmap_file = zmap_file.replace(str(i), str(i) + f'-{cohorts}')
+                print(zmap_file)
                 try:
-                    df = pd.read_csv(tmap_file, header=None)
+                    df = pd.read_csv(zmap_file, header=None)
                 except FileNotFoundError:
                     print('not found')
                     continue
@@ -63,16 +63,16 @@ def main(cohorts=None, window=True):
                 df.to_csv(outfile, mode='a', header=False)
         else:
             if parc is None:
-                tmap_file = os.path.join(tmap_dir, f'{subject}-{task}-psd-tmap-data.csv')
+                zmap_file = os.path.join(zmap_dir, f'{subject}-{task}-psd-zmap-data.csv')
                 index = None
             else:
-                tmap_file = os.path.join(aparc_dir, f'{subject}-{task}-psd-tmap-mean-aparc-data.csv')
+                zmap_file = os.path.join(aparc_dir, f'{subject}-{task}-psd-zmap-mean-aparc-data.csv')
                 index = [f'{subject}-{label}' for label in labels]
             if cohorts:
-                tmap_file = tmap_file.replace(task, task + f'-{cohorts}')
-            print(tmap_file)
+                zmap_file = zmap_file.replace(task, task + f'-{cohorts}')
+            print(zmap_file)
             try:
-                df = pd.read_csv(tmap_file, header=None)
+                df = pd.read_csv(zmap_file, header=None)
             except FileNotFoundError:
                 continue
             df = df[df.columns[::decim_freqs]]

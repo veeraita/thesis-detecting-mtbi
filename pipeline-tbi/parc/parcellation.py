@@ -37,12 +37,12 @@ def parcellate_stc(stc, labels, agg='mean'):
 
 def main(subj, task, data_dir, subjects_dir, ext='fsaverage', agg='mean', cohorts=None, window=False):
     psd_dir = os.path.join(data_dir, subj, 'psd')
-    tmap_dir = os.path.join(data_dir, subj, 'tmap')
+    zmap_dir = os.path.join(data_dir, subj, 'zmap')
     output_dir = os.path.join(data_dir, subj, 'parc')
     os.makedirs(output_dir, exist_ok=True)
 
-    if ext == 'tmap':
-        input_dir = tmap_dir
+    if ext == 'zmap':
+        input_dir = zmap_dir
     else:
         input_dir = psd_dir
 
@@ -87,4 +87,4 @@ if __name__ == "__main__":
     else:
         cohorts = None
 
-    main(subject, task, data_dir, subjects_dir, ext='tmap', agg='mean', cohorts=cohorts, window=True)
+    main(subject, task, data_dir, subjects_dir, ext='zmap', agg='mean', cohorts=cohorts, window=True)
