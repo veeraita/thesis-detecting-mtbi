@@ -15,9 +15,9 @@ from cross_validate import run_cv, run_grid, performance, prediction_per_subject
 
 # define file paths
 DATA_DIR = '/scratch/nbe/tbi-meg/veera/tmap-data/'
-FULL_NORMATIVE_FILENAME = 'tmap_data_aparc_sub_f8_absolute.csv'
-AGE_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_absolute_cohort.csv'
-RANDOM_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_random_cohort.csv'
+FULL_NORMATIVE_FILENAME = 'tmap_data_aparc_sub_f8.csv'
+AGE_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_age.csv'
+RANDOM_COHORT_FILENAME = 'tmap_data_aparc_sub_f8_random.csv'
 # SUBJECTS_DATA_FPATH = 'subject_demographics.csv'
 
 # define random seed for reproducibility
