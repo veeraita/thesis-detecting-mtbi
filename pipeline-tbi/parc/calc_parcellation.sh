@@ -15,7 +15,7 @@ cd $SUBJECTS_DIR || exit 1
 
 dirnames=(*/)
 
-COHORTS=random
+COHORTS=$1
 TASK=EC
 
 for d in "${dirnames[@]}"

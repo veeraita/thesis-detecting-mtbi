@@ -104,7 +104,7 @@ def get_avg_psd(subjs):
 
 
 def get_cohorts(subjects):
-    cohorts = defaultdict(list)
+    cohorts_dict = defaultdict(list)
 
     for subj in subjects:
         if subj.startswith('sub-CC'):
@@ -125,16 +125,16 @@ def get_cohorts(subjects):
 
             cohort_idx = int((age - 8) / 10)
         print("Subject:", subj, "Cohort:", cohort_idx)
-        cohorts[cohort_idx].append(subj)
-    return cohorts
+        cohorts_dict[cohort_idx].append(subj)
+    return cohorts_dict
 
 
-def get_cohort(cohorts, idx, group='tbi', random_cohorts=False):
+def get_cohort(cohorts_dict, idx, group='tbi', cohorts='age'):
     """Calculate averages by age group"""
     if idx < 1 or idx > 7:
         print('Please use index between 1 and 7')
         return
-    cohort_subjects = cohorts.get(idx, None)
+    cohort_subjects = cohorts_dict.get(idx, None)
     if not cohort_subjects:
         print('No subjects in cohort', idx)
         return
@@ -143,15 +143,15 @@ def get_cohort(cohorts, idx, group='tbi', random_cohorts=False):
     fig_dir = os.path.join(group_avg_outdir, 'fig')
     os.makedirs(fig_dir, exist_ok=True)
 
-    if random_cohorts:
+    if cohorts == 'random':
         n = len(cohort_subjects)
-        all_subjects = [s for sublist in cohorts.values() for s in sublist]
+        all_subjects = [s for sublist in cohorts_dict.values() for s in sublist]
         subjects = random.sample(all_subjects, n)
         psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-psd.png')
         stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-random-stc.png')
         stc_avg_fname = os.path.join(group_avg_outdir, f'avg-cohort-{idx}-{group}-random')
         stc_var_fname = os.path.join(group_avg_outdir, f'var-cohort-{idx}-{group}-random')
-    else:
+    elif cohorts == 'age':
         subjects = cohort_subjects
         psd_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-psd.png')
         stc_fig_fname = os.path.join(fig_dir, f'cohort-{idx}-{group}-avg-stc.png')
@@ -186,21 +186,27 @@ def get_all(subjects, group='tbi'):
     visualize_stc(stc_avg_fname, os.path.join(fig_dir, f'{group}-avg-stc.png'), subjects_dir, 'fsaverage')
 
 
-def main(group='tbi', random_cohorts=False):
+def main(group='tbi', cohorts=None):
     if not group or group not in ['tbi', 'camcan', 'case', 'control']:
         group = 'tbi'
     print('Group:', group)
 
     subjects = get_subjects(group)
-    cohorts = get_cohorts(subjects)
-    print(cohorts)
-    for i in range(1, 8):
-        print('Starting cohort: ' + str(i))
-        get_cohort(cohorts, i, group, random_cohorts=random_cohorts)
+    if cohorts is not None:
+        cohorts_dict = get_cohorts(subjects)
+        print(cohorts_dict)
+        for i in range(1, 8):
+            print('Starting cohort: ' + str(i))
+            get_cohort(cohorts_dict, i, group, cohorts=cohorts)
 
     get_all(subjects, group)
 
     
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    group = sys.argv[1]
+    if len(sys.argv) > 2:
+        cohorts = sys.argv[2]
+    else:
+        cohorts = None
+    main(group=group, cohorts=cohorts)
 

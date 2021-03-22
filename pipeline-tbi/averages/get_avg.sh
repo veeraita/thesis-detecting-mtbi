@@ -7,11 +7,7 @@ conda init bash >/dev/null 2>&1
 source ~/.bashrc
 conda activate mne
 
-GROUP=$1
+COHORTS=$1
+GROUP=camcan
 
-if  [ -z "$GROUP" ]
-then
-  GROUP=camcan
-fi
-
-python /scratch/nbe/tbi-meg/veera/pipeline/averages/get_avg.py "${GROUP}"
+python /scratch/nbe/tbi-meg/veera/pipeline/averages/get_avg.py "${GROUP}" "${COHORTS}"
